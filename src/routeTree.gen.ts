@@ -9,38 +9,162 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ShowcaseRouteImport } from './routes/showcase'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShowcaseIndexRouteImport } from './routes/showcase.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ShowcaseCompareRouteImport } from './routes/showcase.compare'
+import { Route as AdminFieldsRouteImport } from './routes/admin.fields'
+import { Route as AdminEquipmentsRouteImport } from './routes/admin.equipments'
+import { Route as AdminDifferentialsRouteImport } from './routes/admin.differentials'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 
+const ShowcaseRoute = ShowcaseRouteImport.update({
+  id: '/showcase',
+  path: '/showcase',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShowcaseIndexRoute = ShowcaseIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShowcaseRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ShowcaseCompareRoute = ShowcaseCompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => ShowcaseRoute,
+} as any)
+const AdminFieldsRoute = AdminFieldsRouteImport.update({
+  id: '/fields',
+  path: '/fields',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminEquipmentsRoute = AdminEquipmentsRouteImport.update({
+  id: '/equipments',
+  path: '/equipments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDifferentialsRoute = AdminDifferentialsRouteImport.update({
+  id: '/differentials',
+  path: '/differentials',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/showcase': typeof ShowcaseRouteWithChildren
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/differentials': typeof AdminDifferentialsRoute
+  '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/fields': typeof AdminFieldsRoute
+  '/showcase/compare': typeof ShowcaseCompareRoute
+  '/admin/': typeof AdminIndexRoute
+  '/showcase/': typeof ShowcaseIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/differentials': typeof AdminDifferentialsRoute
+  '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/fields': typeof AdminFieldsRoute
+  '/showcase/compare': typeof ShowcaseCompareRoute
+  '/admin': typeof AdminIndexRoute
+  '/showcase': typeof ShowcaseIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/showcase': typeof ShowcaseRouteWithChildren
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/differentials': typeof AdminDifferentialsRoute
+  '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/fields': typeof AdminFieldsRoute
+  '/showcase/compare': typeof ShowcaseCompareRoute
+  '/admin/': typeof AdminIndexRoute
+  '/showcase/': typeof ShowcaseIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/showcase'
+    | '/admin/categories'
+    | '/admin/differentials'
+    | '/admin/equipments'
+    | '/admin/fields'
+    | '/showcase/compare'
+    | '/admin/'
+    | '/showcase/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin/categories'
+    | '/admin/differentials'
+    | '/admin/equipments'
+    | '/admin/fields'
+    | '/showcase/compare'
+    | '/admin'
+    | '/showcase'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/showcase'
+    | '/admin/categories'
+    | '/admin/differentials'
+    | '/admin/equipments'
+    | '/admin/fields'
+    | '/showcase/compare'
+    | '/admin/'
+    | '/showcase/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  ShowcaseRoute: typeof ShowcaseRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/showcase': {
+      id: '/showcase'
+      path: '/showcase'
+      fullPath: '/showcase'
+      preLoaderRoute: typeof ShowcaseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,21 +172,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/showcase/': {
+      id: '/showcase/'
+      path: '/'
+      fullPath: '/showcase/'
+      preLoaderRoute: typeof ShowcaseIndexRouteImport
+      parentRoute: typeof ShowcaseRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/showcase/compare': {
+      id: '/showcase/compare'
+      path: '/compare'
+      fullPath: '/showcase/compare'
+      preLoaderRoute: typeof ShowcaseCompareRouteImport
+      parentRoute: typeof ShowcaseRoute
+    }
+    '/admin/fields': {
+      id: '/admin/fields'
+      path: '/fields'
+      fullPath: '/admin/fields'
+      preLoaderRoute: typeof AdminFieldsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/equipments': {
+      id: '/admin/equipments'
+      path: '/equipments'
+      fullPath: '/admin/equipments'
+      preLoaderRoute: typeof AdminEquipmentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/differentials': {
+      id: '/admin/differentials'
+      path: '/differentials'
+      fullPath: '/admin/differentials'
+      preLoaderRoute: typeof AdminDifferentialsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminDifferentialsRoute: typeof AdminDifferentialsRoute
+  AdminEquipmentsRoute: typeof AdminEquipmentsRoute
+  AdminFieldsRoute: typeof AdminFieldsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminDifferentialsRoute: AdminDifferentialsRoute,
+  AdminEquipmentsRoute: AdminEquipmentsRoute,
+  AdminFieldsRoute: AdminFieldsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface ShowcaseRouteChildren {
+  ShowcaseCompareRoute: typeof ShowcaseCompareRoute
+  ShowcaseIndexRoute: typeof ShowcaseIndexRoute
+}
+
+const ShowcaseRouteChildren: ShowcaseRouteChildren = {
+  ShowcaseCompareRoute: ShowcaseCompareRoute,
+  ShowcaseIndexRoute: ShowcaseIndexRoute,
+}
+
+const ShowcaseRouteWithChildren = ShowcaseRoute._addFileChildren(
+  ShowcaseRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
+  ShowcaseRoute: ShowcaseRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
