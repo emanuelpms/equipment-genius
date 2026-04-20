@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminFieldsRouteImport } from './routes/admin.fields'
 import { Route as AdminEquipmentsRouteImport } from './routes/admin.equipments'
+import { Route as AdminDifferentialsRouteImport } from './routes/admin.differentials'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
@@ -29,36 +32,81 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFieldsRoute = AdminFieldsRouteImport.update({
+  id: '/fields',
+  path: '/fields',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminEquipmentsRoute = AdminEquipmentsRouteImport.update({
   id: '/equipments',
   path: '/equipments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminDifferentialsRoute = AdminDifferentialsRouteImport.update({
+  id: '/differentials',
+  path: '/differentials',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => AdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/differentials': typeof AdminDifferentialsRoute
   '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/fields': typeof AdminFieldsRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/differentials': typeof AdminDifferentialsRoute
   '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/fields': typeof AdminFieldsRoute
   '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin/categories': typeof AdminCategoriesRoute
+  '/admin/differentials': typeof AdminDifferentialsRoute
   '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/fields': typeof AdminFieldsRoute
   '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/admin/equipments' | '/admin/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/admin/categories'
+    | '/admin/differentials'
+    | '/admin/equipments'
+    | '/admin/fields'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin/equipments' | '/admin'
-  id: '__root__' | '/' | '/admin' | '/admin/equipments' | '/admin/'
+  to:
+    | '/'
+    | '/admin/categories'
+    | '/admin/differentials'
+    | '/admin/equipments'
+    | '/admin/fields'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/admin/categories'
+    | '/admin/differentials'
+    | '/admin/equipments'
+    | '/admin/fields'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -89,6 +137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/fields': {
+      id: '/admin/fields'
+      path: '/fields'
+      fullPath: '/admin/fields'
+      preLoaderRoute: typeof AdminFieldsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/equipments': {
       id: '/admin/equipments'
       path: '/equipments'
@@ -96,16 +151,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEquipmentsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/differentials': {
+      id: '/admin/differentials'
+      path: '/differentials'
+      fullPath: '/admin/differentials'
+      preLoaderRoute: typeof AdminDifferentialsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
+  AdminDifferentialsRoute: typeof AdminDifferentialsRoute
   AdminEquipmentsRoute: typeof AdminEquipmentsRoute
+  AdminFieldsRoute: typeof AdminFieldsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminCategoriesRoute: AdminCategoriesRoute,
+  AdminDifferentialsRoute: AdminDifferentialsRoute,
   AdminEquipmentsRoute: AdminEquipmentsRoute,
+  AdminFieldsRoute: AdminFieldsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
