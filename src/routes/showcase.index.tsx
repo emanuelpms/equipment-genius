@@ -49,13 +49,13 @@ function Showcase() {
         <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(ellipse at top right, oklch(0.78 0.2 280 / 0.4), transparent 50%)" }} />
         <div className="relative px-8 py-10 md:py-14">
           <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest bg-primary/15 text-primary px-3 py-1 rounded-full mb-4">
-            <Sparkles className="h-3 w-3" /> {ownBrand?.name ?? "Sua marca"}
+            <Sparkles className="h-3 w-3" /> {ownBrand?.name ?? "Sua marca"} · Competitive Intelligence
           </div>
           <h1 className="font-display text-4xl md:text-5xl font-bold leading-tight max-w-2xl">
-            Compare nossos equipamentos <span className="gradient-text">vs concorrentes</span>.
+            Ultrassom <span className="gradient-text">Samsung Medison</span> vs concorrentes.
           </h1>
           <p className="text-muted-foreground mt-4 max-w-xl">
-            {myEquipments.length} modelos da nossa linha · {competitorEquips.length} de concorrentes mapeados. Selecione um modelo para iniciar uma comparação.
+            {myEquipments.length} modelos Samsung · {competitorEquips.length} concorrentes (GE, Philips, Siemens) mapeados. Selecione um modelo para iniciar uma comparação técnica lado a lado.
           </p>
         </div>
       </div>
