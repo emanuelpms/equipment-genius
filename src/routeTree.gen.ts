@@ -19,6 +19,7 @@ import { Route as AdminFieldsRouteImport } from './routes/admin.fields'
 import { Route as AdminEquipmentsRouteImport } from './routes/admin.equipments'
 import { Route as AdminDifferentialsRouteImport } from './routes/admin.differentials'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
+import { Route as AdminBrandsRouteImport } from './routes/admin.brands'
 
 const ShowcaseRoute = ShowcaseRouteImport.update({
   id: '/showcase',
@@ -70,11 +71,17 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBrandsRoute = AdminBrandsRouteImport.update({
+  id: '/brands',
+  path: '/brands',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/showcase': typeof ShowcaseRouteWithChildren
+  '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/differentials': typeof AdminDifferentialsRoute
   '/admin/equipments': typeof AdminEquipmentsRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/differentials': typeof AdminDifferentialsRoute
   '/admin/equipments': typeof AdminEquipmentsRoute
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/showcase': typeof ShowcaseRouteWithChildren
+  '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/differentials': typeof AdminDifferentialsRoute
   '/admin/equipments': typeof AdminEquipmentsRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/showcase'
+    | '/admin/brands'
     | '/admin/categories'
     | '/admin/differentials'
     | '/admin/equipments'
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin/brands'
     | '/admin/categories'
     | '/admin/differentials'
     | '/admin/equipments'
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/showcase'
+    | '/admin/brands'
     | '/admin/categories'
     | '/admin/differentials'
     | '/admin/equipments'
@@ -221,10 +233,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/brands': {
+      id: '/admin/brands'
+      path: '/brands'
+      fullPath: '/admin/brands'
+      preLoaderRoute: typeof AdminBrandsRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
 interface AdminRouteChildren {
+  AdminBrandsRoute: typeof AdminBrandsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminDifferentialsRoute: typeof AdminDifferentialsRoute
   AdminEquipmentsRoute: typeof AdminEquipmentsRoute
@@ -233,6 +253,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminBrandsRoute: AdminBrandsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminDifferentialsRoute: AdminDifferentialsRoute,
   AdminEquipmentsRoute: AdminEquipmentsRoute,
@@ -264,3 +285,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
