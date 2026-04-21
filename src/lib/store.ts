@@ -13,6 +13,7 @@ export interface SpecField {
   options?: string[]; // for select
   group?: string;     // grouping in compare table
   highlight?: boolean;
+  order?: number;
 }
 
 export interface Category {
@@ -21,28 +22,50 @@ export interface Category {
   icon: string;       // lucide icon name
   description?: string;
   color?: string;     // optional accent
+  order?: number;
 }
 
 export interface Differential {
   id: string;
   label: string;
   icon: string;
+  order?: number;
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+  isOwn?: boolean;     // true = "minha empresa"
+  logoUrl?: string;    // url or base64
+  color?: string;      // accent
+  order?: number;
 }
 
 export interface Equipment {
   id: string;
   name: string;
   shortName?: string;
+  brandId?: string;
   tier: Tier;
   tagline?: string;
   description?: string;
   imageUrl?: string;
+  photos?: string[];          // url or base64
   categories: string[];      // category ids
   bestFor: string[];          // category ids where it shines
   differentials: string[];   // differential ids
   specs: Record<string, string | number | boolean>;
   highlights?: string[];     // free-text bullets
   releaseYear?: number;
+  order?: number;
+  createdAt: number;
+}
+
+export interface SavedComparison {
+  id: string;
+  name: string;
+  ownEquipmentId: string;
+  competitorIds: string[];
   createdAt: number;
 }
 
@@ -58,22 +81,37 @@ interface AppState {
   categories: Category[];
   differentials: Differential[];
   equipments: Equipment[];
+  brands: Brand[];
+  savedComparisons: SavedComparison[];
 
   addField: (f: Omit<SpecField, "id">) => void;
   updateField: (id: string, patch: Partial<SpecField>) => void;
   removeField: (id: string) => void;
+  reorderFields: (ids: string[]) => void;
 
   addCategory: (c: Omit<Category, "id">) => void;
   updateCategory: (id: string, patch: Partial<Category>) => void;
   removeCategory: (id: string) => void;
+  reorderCategories: (ids: string[]) => void;
 
   addDifferential: (d: Omit<Differential, "id">) => void;
   updateDifferential: (id: string, patch: Partial<Differential>) => void;
   removeDifferential: (id: string) => void;
+  reorderDifferentials: (ids: string[]) => void;
+
+  addBrand: (b: Omit<Brand, "id">) => string;
+  updateBrand: (id: string, patch: Partial<Brand>) => void;
+  removeBrand: (id: string) => void;
+  setOwnBrand: (id: string) => void;
 
   addEquipment: (e: Omit<Equipment, "id" | "createdAt">) => void;
   updateEquipment: (id: string, patch: Partial<Equipment>) => void;
   removeEquipment: (id: string) => void;
+  reorderEquipments: (ids: string[]) => void;
+  duplicateEquipment: (id: string) => void;
+
+  addSavedComparison: (c: Omit<SavedComparison, "id" | "createdAt">) => string;
+  removeSavedComparison: (id: string) => void;
 
   resetSeed: () => void;
 }
@@ -109,19 +147,28 @@ const seedDiffs: Differential[] = [
   { id: uid(), label: "Portátil leve", icon: "Briefcase" },
 ];
 
+const seedBrands: Brand[] = [
+  { id: uid(), name: "Minha Empresa", isOwn: true, color: "270", order: 0 },
+  { id: uid(), name: "Concorrente A", color: "10", order: 1 },
+  { id: uid(), name: "Concorrente B", color: "210", order: 2 },
+];
+
 const seedEquipments = (
   fields: SpecField[],
   cats: Category[],
-  diffs: Differential[]
+  diffs: Differential[],
+  brands: Brand[]
 ): Equipment[] => {
   const f = (k: string) => fields.find((x) => x.key === k)!.key;
   const c = (n: string) => cats.find((x) => x.name === n)!.id;
   const d = (n: string) => diffs.find((x) => x.label === n)!.id;
+  const b = (n: string) => brands.find((x) => x.name === n)!.id;
   return [
     {
       id: uid(),
       name: "Apex Pro X9",
       shortName: "X9",
+      brandId: b("Minha Empresa"),
       tier: "premium",
       tagline: "Topo de linha com IA Pro",
       description: "Plataforma flagship com motor de IA mais avançado, imagem 4K e workflow turbo.",
@@ -140,12 +187,14 @@ const seedEquipments = (
       },
       highlights: ["Auto-NT", "Cardio AI Suite", "Live HQ Beamforming"],
       releaseYear: 2024,
+      order: 0,
       createdAt: Date.now(),
     },
     {
       id: uid(),
       name: "Vista M5",
       shortName: "M5",
+      brandId: b("Minha Empresa"),
       tier: "medium",
       tagline: "Equilíbrio entre desempenho e custo",
       description: "Versátil para uso geral com IA avançada e excelente ergonomia.",
@@ -164,12 +213,14 @@ const seedEquipments = (
       },
       highlights: ["Pré-natal AI", "Workflow OB"],
       releaseYear: 2023,
+      order: 1,
       createdAt: Date.now(),
     },
     {
       id: uid(),
       name: "Go Lite P2",
       shortName: "P2",
+      brandId: b("Minha Empresa"),
       tier: "low",
       tagline: "Portátil para POC",
       description: "Ultra portátil para point-of-care, simples e confiável.",
@@ -188,6 +239,59 @@ const seedEquipments = (
       },
       highlights: ["Bateria 4h", "Ultraportátil"],
       releaseYear: 2024,
+      order: 2,
+      createdAt: Date.now(),
+    },
+    {
+      id: uid(),
+      name: "Rivalix R10",
+      shortName: "R10",
+      brandId: b("Concorrente A"),
+      tier: "premium",
+      tagline: "Top de linha do concorrente A",
+      description: "Equipamento premium do concorrente, foco em cardiologia.",
+      categories: [c("Cardiologia"), c("Vascular"), c("IA")],
+      bestFor: [c("Cardiologia")],
+      differentials: [d("Imagem premium 4K"), d("Conectividade DICOM")],
+      specs: {
+        [f("transducers")]: 4,
+        [f("monitor")]: "21.5",
+        [f("touchscreen")]: true,
+        [f("battery")]: false,
+        [f("aiEngine")]: "Avançado",
+        [f("elastography")]: true,
+        [f("contrastImaging")]: true,
+        [f("weight")]: 105,
+      },
+      highlights: ["Cardio Suite"],
+      releaseYear: 2023,
+      order: 3,
+      createdAt: Date.now(),
+    },
+    {
+      id: uid(),
+      name: "Compete C7",
+      shortName: "C7",
+      brandId: b("Concorrente B"),
+      tier: "medium",
+      tagline: "Linha intermediária do concorrente B",
+      description: "Foco em obstetrícia e MSK.",
+      categories: [c("Obstetrícia"), c("MSK")],
+      bestFor: [c("MSK")],
+      differentials: [d("Ergonomia premium")],
+      specs: {
+        [f("transducers")]: 3,
+        [f("monitor")]: "19",
+        [f("touchscreen")]: false,
+        [f("battery")]: false,
+        [f("aiEngine")]: "Básico",
+        [f("elastography")]: false,
+        [f("contrastImaging")]: false,
+        [f("weight")]: 80,
+      },
+      highlights: [],
+      releaseYear: 2022,
+      order: 4,
       createdAt: Date.now(),
     },
   ];
@@ -196,7 +300,8 @@ const seedEquipments = (
 const initialFields = seedFields;
 const initialCats = seedCategories;
 const initialDiffs = seedDiffs;
-const initialEquips = seedEquipments(initialFields, initialCats, initialDiffs);
+const initialBrands = seedBrands;
+const initialEquips = seedEquipments(initialFields, initialCats, initialDiffs, initialBrands);
 
 export const useStore = create<AppState>()(
   persist(
@@ -209,6 +314,8 @@ export const useStore = create<AppState>()(
       categories: initialCats,
       differentials: initialDiffs,
       equipments: initialEquips,
+      brands: initialBrands,
+      savedComparisons: [],
 
       addField: (f) => set((s) => ({ fields: [...s.fields, { ...f, id: uid() }] })),
       updateField: (id, patch) => set((s) => ({ fields: s.fields.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -224,6 +331,9 @@ export const useStore = create<AppState>()(
             : s.equipments,
         };
       }),
+      reorderFields: (ids) => set((s) => ({
+        fields: ids.map((id, i) => ({ ...s.fields.find((f) => f.id === id)!, order: i })).filter(Boolean),
+      })),
 
       addCategory: (c) => set((s) => ({ categories: [...s.categories, { ...c, id: uid() }] })),
       updateCategory: (id, patch) => set((s) => ({ categories: s.categories.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -235,6 +345,9 @@ export const useStore = create<AppState>()(
           bestFor: e.bestFor.filter((c) => c !== id),
         })),
       })),
+      reorderCategories: (ids) => set((s) => ({
+        categories: ids.map((id, i) => ({ ...s.categories.find((c) => c.id === id)!, order: i })),
+      })),
 
       addDifferential: (d) => set((s) => ({ differentials: [...s.differentials, { ...d, id: uid() }] })),
       updateDifferential: (id, patch) => set((s) => ({ differentials: s.differentials.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -242,19 +355,53 @@ export const useStore = create<AppState>()(
         differentials: s.differentials.filter((x) => x.id !== id),
         equipments: s.equipments.map((e) => ({ ...e, differentials: e.differentials.filter((d) => d !== id) })),
       })),
+      reorderDifferentials: (ids) => set((s) => ({
+        differentials: ids.map((id, i) => ({ ...s.differentials.find((d) => d.id === id)!, order: i })),
+      })),
+
+      addBrand: (b) => {
+        const id = uid();
+        set((s) => ({ brands: [...s.brands, { ...b, id, order: s.brands.length }] }));
+        return id;
+      },
+      updateBrand: (id, patch) => set((s) => ({ brands: s.brands.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      removeBrand: (id) => set((s) => ({
+        brands: s.brands.filter((x) => x.id !== id),
+        equipments: s.equipments.map((e) => (e.brandId === id ? { ...e, brandId: undefined } : e)),
+      })),
+      setOwnBrand: (id) => set((s) => ({
+        brands: s.brands.map((b) => ({ ...b, isOwn: b.id === id })),
+      })),
 
       addEquipment: (e) => set((s) => ({ equipments: [...s.equipments, { ...e, id: uid(), createdAt: Date.now() }] })),
       updateEquipment: (id, patch) => set((s) => ({ equipments: s.equipments.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
       removeEquipment: (id) => set((s) => ({ equipments: s.equipments.filter((x) => x.id !== id) })),
+      reorderEquipments: (ids) => set((s) => ({
+        equipments: ids.map((id, i) => ({ ...s.equipments.find((e) => e.id === id)!, order: i })),
+      })),
+      duplicateEquipment: (id) => set((s) => {
+        const e = s.equipments.find((x) => x.id === id);
+        if (!e) return s;
+        return { equipments: [...s.equipments, { ...e, id: uid(), name: `${e.name} (cópia)`, createdAt: Date.now() }] };
+      }),
+
+      addSavedComparison: (c) => {
+        const id = uid();
+        set((s) => ({ savedComparisons: [...s.savedComparisons, { ...c, id, createdAt: Date.now() }] }));
+        return id;
+      },
+      removeSavedComparison: (id) => set((s) => ({ savedComparisons: s.savedComparisons.filter((x) => x.id !== id) })),
 
       resetSeed: () => set({
         fields: initialFields,
         categories: initialCats,
         differentials: initialDiffs,
         equipments: initialEquips,
+        brands: initialBrands,
+        savedComparisons: [],
       }),
     }),
-    { name: "equip-catalog-v1" }
+    { name: "equip-catalog-v2" }
   )
 );
 

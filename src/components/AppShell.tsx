@@ -1,6 +1,6 @@
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useStore } from "@/lib/store";
-import { LayoutDashboard, Package, Sliders, Tags, Sparkles, LogOut, Settings, ShoppingBag } from "lucide-react";
+import { LayoutDashboard, Package, Sliders, Tags, Sparkles, LogOut, Settings, ShoppingBag, Building2, Swords } from "lucide-react";
 
 export function AppShell({ scope }: { scope: "admin" | "seller" }) {
   const { auth, logout } = useStore();
@@ -9,6 +9,7 @@ export function AppShell({ scope }: { scope: "admin" | "seller" }) {
 
   const adminLinks = [
     { to: "/admin", label: "Visão Geral", icon: LayoutDashboard, end: true },
+    { to: "/admin/brands", label: "Marcas", icon: Building2 },
     { to: "/admin/equipments", label: "Equipamentos", icon: Package },
     { to: "/admin/fields", label: "Colunas Comparativas", icon: Sliders },
     { to: "/admin/categories", label: "Categorias de Uso", icon: Tags },
@@ -16,7 +17,7 @@ export function AppShell({ scope }: { scope: "admin" | "seller" }) {
   ];
   const sellerLinks = [
     { to: "/showcase", label: "Vitrine", icon: ShoppingBag, end: true },
-    { to: "/showcase/compare", label: "Comparar", icon: Sliders },
+    { to: "/showcase/compare", label: "Comparar", icon: Swords },
   ];
   const links = scope === "admin" ? adminLinks : sellerLinks;
 
