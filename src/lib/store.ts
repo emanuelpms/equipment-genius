@@ -13,6 +13,7 @@ export interface SpecField {
   options?: string[]; // for select
   group?: string;     // grouping in compare table
   highlight?: boolean;
+  order?: number;
 }
 
 export interface Category {
@@ -21,28 +22,50 @@ export interface Category {
   icon: string;       // lucide icon name
   description?: string;
   color?: string;     // optional accent
+  order?: number;
 }
 
 export interface Differential {
   id: string;
   label: string;
   icon: string;
+  order?: number;
+}
+
+export interface Brand {
+  id: string;
+  name: string;
+  isOwn?: boolean;     // true = "minha empresa"
+  logoUrl?: string;    // url or base64
+  color?: string;      // accent
+  order?: number;
 }
 
 export interface Equipment {
   id: string;
   name: string;
   shortName?: string;
+  brandId?: string;
   tier: Tier;
   tagline?: string;
   description?: string;
   imageUrl?: string;
+  photos?: string[];          // url or base64
   categories: string[];      // category ids
   bestFor: string[];          // category ids where it shines
   differentials: string[];   // differential ids
   specs: Record<string, string | number | boolean>;
   highlights?: string[];     // free-text bullets
   releaseYear?: number;
+  order?: number;
+  createdAt: number;
+}
+
+export interface SavedComparison {
+  id: string;
+  name: string;
+  ownEquipmentId: string;
+  competitorIds: string[];
   createdAt: number;
 }
 
