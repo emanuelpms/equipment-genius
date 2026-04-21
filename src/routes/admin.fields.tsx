@@ -2,12 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, type SpecField, type FieldType } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
-import { Plus, Trash2, GripVertical, Star } from "lucide-react";
+import { Plus, Trash2, Star } from "lucide-react";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableItem } from "@/components/SortableItem";
 
 export const Route = createFileRoute("/admin/fields")({ component: FieldsAdmin });
 
 function FieldsAdmin() {
-  const { fields, addField, updateField, removeField } = useStore();
+  const { fields, addField, updateField, removeField, reorderFields } = useStore();
   const [draft, setDraft] = useState({ label: "", key: "", type: "text" as FieldType, unit: "", group: "Geral", options: "" });
 
   const submit = () => {
@@ -21,7 +24,16 @@ function FieldsAdmin() {
     setDraft({ label: "", key: "", type: "text", unit: "", group: "Geral", options: "" });
   };
 
-  const groups = Array.from(new Set(fields.map((f) => f.group || "Geral")));
+  const sortedFields = [...fields].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  const groups = Array.from(new Set(sortedFields.map((f) => f.group || "Geral")));
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const onDragEnd = (e: DragEndEvent) => {
+    if (!e.over || e.active.id === e.over.id) return;
+    const ids = sortedFields.map((f) => f.id);
+    const oldIdx = ids.indexOf(String(e.active.id));
+    const newIdx = ids.indexOf(String(e.over.id));
+    reorderFields(arrayMove(ids, oldIdx, newIdx));
+  };
 
   return (
     <div className="px-8 py-8 max-w-5xl">
@@ -44,18 +56,24 @@ function FieldsAdmin() {
         )}
       </div>
 
-      <div className="space-y-5">
-        {groups.map((g) => (
-          <div key={g}>
-            <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{g}</div>
-            <div className="glass rounded-xl divide-y divide-border">
-              {fields.filter((f) => (f.group || "Geral") === g).map((f) => (
-                <FieldRow key={f.id} f={f} onUpdate={(p) => updateField(f.id, p)} onDelete={() => confirm(`Remover coluna "${f.label}"?`) && removeField(f.id)} />
-              ))}
-            </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <SortableContext items={sortedFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-5">
+            {groups.map((g) => (
+              <div key={g}>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{g}</div>
+                <div className="glass rounded-xl divide-y divide-border">
+                  {sortedFields.filter((f) => (f.group || "Geral") === g).map((f) => (
+                    <SortableItem key={f.id} id={f.id}>
+                      <FieldRow f={f} onUpdate={(p) => updateField(f.id, p)} onDelete={() => confirm(`Remover coluna "${f.label}"?`) && removeField(f.id)} />
+                    </SortableItem>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
@@ -64,10 +82,10 @@ const ic = "w-full bg-input/40 border border-border rounded-lg px-3 py-2 text-sm
 
 function FieldRow({ f, onUpdate, onDelete }: { f: SpecField; onUpdate: (p: Partial<SpecField>) => void; onDelete: () => void }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-3">
-      <GripVertical className="h-4 w-4 text-muted-foreground" />
+    <div className="flex items-center gap-3 px-2 py-3">
       <input value={f.label} onChange={(e) => onUpdate({ label: e.target.value })} className={`${ic} flex-1`} />
       <input value={f.unit ?? ""} onChange={(e) => onUpdate({ unit: e.target.value })} placeholder="unidade" className={`${ic} w-28`} />
+      <input value={f.group ?? "Geral"} onChange={(e) => onUpdate({ group: e.target.value })} placeholder="grupo" className={`${ic} w-28`} />
       <span className="text-[10px] text-muted-foreground uppercase tracking-wider w-16 text-center">{f.type}</span>
       <button onClick={() => onUpdate({ highlight: !f.highlight })} title="Destaque" className={`p-1.5 rounded-md ${f.highlight ? "text-tier-premium" : "text-muted-foreground hover:text-foreground"}`}>
         <Star className="h-4 w-4" fill={f.highlight ? "currentColor" : "none"} />
