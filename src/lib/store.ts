@@ -118,39 +118,104 @@ interface AppState {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+// Samsung Healthcare ultrasound seed data
+const F = {
+  imgTech: "imgTech", channels: "channels", depth: "depth", fps: "fps",
+  monitorRes: "monitorRes", monitorSize: "monitorSize", weight: "weight",
+  battery: "battery", touch: "touch",
+  pConvex: "pConvex", pLinear: "pLinear", pEndo: "pEndo", pTEE: "pTEE",
+  pMatrix: "pMatrix", pIntra: "pIntra", pMicro: "pMicro", probesTotal: "probesTotal",
+  cardio: "cardio", elasto: "elasto", ceus: "ceus", ai: "ai",
+  obBio: "obBio", colorDoppler: "colorDoppler", pocus: "pocus",
+  vol3d4d: "vol3d4d", strain: "strain", needle: "needle",
+  licModel: "licModel", licPerp: "licPerp", swUpdate: "swUpdate",
+  dicom: "dicom", hisris: "hisris", autoPdf: "autoPdf", training: "training",
+  warranty: "warranty", support247: "support247", trainIncl: "trainIncl",
+  responseTime: "responseTime", loaner: "loaner", localStock: "localStock",
+  wifi: "wifi", bluetooth: "bluetooth", usbc: "usbc", cloud: "cloud", telemed: "telemed",
+} as const;
+
 const seedFields: SpecField[] = [
-  { id: uid(), key: "transducers", label: "Transdutores Suportados", type: "number", unit: "portas", group: "Hardware", highlight: true },
-  { id: uid(), key: "monitor", label: "Monitor", type: "text", unit: "polegadas", group: "Hardware" },
-  { id: uid(), key: "touchscreen", label: "Touchscreen", type: "boolean", group: "Hardware" },
-  { id: uid(), key: "battery", label: "Bateria Integrada", type: "boolean", group: "Hardware" },
-  { id: uid(), key: "aiEngine", label: "Motor de IA", type: "select", options: ["Nenhum", "Básico", "Avançado", "Pro"], group: "Inteligência", highlight: true },
-  { id: uid(), key: "elastography", label: "Elastografia", type: "boolean", group: "Imagem" },
-  { id: uid(), key: "contrastImaging", label: "Imagem com Contraste", type: "boolean", group: "Imagem" },
-  { id: uid(), key: "weight", label: "Peso", type: "number", unit: "kg", group: "Físico" },
+  // Hardware
+  { id: uid(), key: F.imgTech, label: "Tecnologia de imagem", type: "text", group: "Hardware", highlight: true, order: 0 },
+  { id: uid(), key: F.channels, label: "Número de canais", type: "number", group: "Hardware", highlight: true, order: 1 },
+  { id: uid(), key: F.depth, label: "Profundidade máxima", type: "number", unit: "cm", group: "Hardware", order: 2 },
+  { id: uid(), key: F.fps, label: "Frame rate", type: "number", unit: "fps", group: "Hardware", order: 3 },
+  { id: uid(), key: F.monitorRes, label: "Resolução do monitor", type: "text", group: "Hardware", order: 4 },
+  { id: uid(), key: F.monitorSize, label: "Tamanho do monitor", type: "number", unit: "pol", group: "Hardware", order: 5 },
+  { id: uid(), key: F.weight, label: "Peso", type: "number", unit: "kg", group: "Hardware", order: 6 },
+  { id: uid(), key: F.battery, label: "Portátil com bateria", type: "boolean", group: "Hardware", order: 7 },
+  { id: uid(), key: F.touch, label: "Tela touch screen", type: "boolean", group: "Hardware", order: 8 },
+  // Transdutores
+  { id: uid(), key: F.pConvex, label: "Sonda convex", type: "boolean", group: "Transdutores", order: 9 },
+  { id: uid(), key: F.pLinear, label: "Sonda linear", type: "boolean", group: "Transdutores", order: 10 },
+  { id: uid(), key: F.pEndo, label: "Sonda endocavitária", type: "boolean", group: "Transdutores", order: 11 },
+  { id: uid(), key: F.pTEE, label: "Sonda TEE (transesofágica)", type: "boolean", group: "Transdutores", order: 12 },
+  { id: uid(), key: F.pMatrix, label: "Sonda matricial 4D", type: "boolean", group: "Transdutores", order: 13 },
+  { id: uid(), key: F.pIntra, label: "Sonda intraoperatória", type: "boolean", group: "Transdutores", order: 14 },
+  { id: uid(), key: F.pMicro, label: "Sonda micro-convexa", type: "boolean", group: "Transdutores", order: 15 },
+  { id: uid(), key: F.probesTotal, label: "Total de sondas compatíveis", type: "number", group: "Transdutores", order: 16 },
+  // Aplicações Clínicas
+  { id: uid(), key: F.cardio, label: "Cardiologia avançada", type: "boolean", group: "Aplicações Clínicas", highlight: true, order: 17 },
+  { id: uid(), key: F.elasto, label: "Elastografia", type: "boolean", group: "Aplicações Clínicas", order: 18 },
+  { id: uid(), key: F.ceus, label: "Contraste (CEUS)", type: "boolean", group: "Aplicações Clínicas", order: 19 },
+  { id: uid(), key: F.ai, label: "IA assistida / Auto-medição", type: "boolean", group: "Aplicações Clínicas", highlight: true, order: 20 },
+  { id: uid(), key: F.obBio, label: "Biometria obstétrica", type: "boolean", group: "Aplicações Clínicas", order: 21 },
+  { id: uid(), key: F.colorDoppler, label: "Doppler colorido", type: "boolean", group: "Aplicações Clínicas", order: 22 },
+  { id: uid(), key: F.pocus, label: "POCUS / Urgência-Emergência", type: "boolean", group: "Aplicações Clínicas", order: 23 },
+  { id: uid(), key: F.vol3d4d, label: "3D/4D em tempo real", type: "boolean", group: "Aplicações Clínicas", order: 24 },
+  { id: uid(), key: F.strain, label: "Strain rate / Speckle tracking", type: "boolean", group: "Aplicações Clínicas", order: 25 },
+  { id: uid(), key: F.needle, label: "Needle guidance", type: "boolean", group: "Aplicações Clínicas", order: 26 },
+  // Licenças
+  { id: uid(), key: F.licModel, label: "Modelo de licenciamento", type: "text", group: "Licenças e Módulos", order: 27 },
+  { id: uid(), key: F.licPerp, label: "Licença perpétua disponível", type: "boolean", group: "Licenças e Módulos", order: 28 },
+  { id: uid(), key: F.swUpdate, label: "Atualização de software inclusa", type: "boolean", group: "Licenças e Módulos", order: 29 },
+  { id: uid(), key: F.dicom, label: "DICOM incluso", type: "boolean", group: "Licenças e Módulos", order: 30 },
+  { id: uid(), key: F.hisris, label: "Conectividade HIS/RIS", type: "boolean", group: "Licenças e Módulos", order: 31 },
+  { id: uid(), key: F.autoPdf, label: "Relatório automático PDF", type: "boolean", group: "Licenças e Módulos", order: 32 },
+  { id: uid(), key: F.training, label: "Módulo de ensino/treinamento", type: "boolean", group: "Licenças e Módulos", order: 33 },
+  // Suporte
+  { id: uid(), key: F.warranty, label: "Garantia de fábrica", type: "number", unit: "anos", group: "Suporte e Garantia", order: 34 },
+  { id: uid(), key: F.support247, label: "Suporte técnico 24/7", type: "boolean", group: "Suporte e Garantia", order: 35 },
+  { id: uid(), key: F.trainIncl, label: "Treinamento incluso", type: "boolean", group: "Suporte e Garantia", order: 36 },
+  { id: uid(), key: F.responseTime, label: "Tempo médio de atendimento", type: "number", unit: "h", group: "Suporte e Garantia", order: 37 },
+  { id: uid(), key: F.loaner, label: "Empréstimo de equipamento", type: "boolean", group: "Suporte e Garantia", order: 38 },
+  { id: uid(), key: F.localStock, label: "Peças em estoque local", type: "boolean", group: "Suporte e Garantia", order: 39 },
+  // Conectividade
+  { id: uid(), key: F.wifi, label: "Wi-Fi integrado", type: "boolean", group: "Conectividade", order: 40 },
+  { id: uid(), key: F.bluetooth, label: "Bluetooth", type: "boolean", group: "Conectividade", order: 41 },
+  { id: uid(), key: F.usbc, label: "USB-C / USB 3.0", type: "boolean", group: "Conectividade", order: 42 },
+  { id: uid(), key: F.cloud, label: "Exportação para nuvem", type: "boolean", group: "Conectividade", order: 43 },
+  { id: uid(), key: F.telemed, label: "Telemedicina / teleconsulta", type: "boolean", group: "Conectividade", order: 44 },
 ];
 
 const seedCategories: Category[] = [
-  { id: uid(), name: "IA", icon: "Sparkles", description: "Inteligência artificial e automação", color: "270" },
-  { id: uid(), name: "Cardiologia", icon: "HeartPulse", description: "Exames cardíacos avançados", color: "10" },
-  { id: uid(), name: "Obstetrícia", icon: "Baby", description: "Pré-natal e ginecologia", color: "330" },
-  { id: uid(), name: "MSK", icon: "Bone", description: "Musculoesquelético", color: "200" },
-  { id: uid(), name: "Vascular", icon: "Activity", description: "Estudos vasculares", color: "150" },
-  { id: uid(), name: "Point-of-Care", icon: "Stethoscope", description: "Ultrassom à beira leito", color: "60" },
+  { id: uid(), name: "Cardiologia", icon: "HeartPulse", description: "Exames cardíacos avançados", color: "10", order: 0 },
+  { id: uid(), name: "Ginecologia", icon: "Venus", description: "Saúde da mulher", color: "330", order: 1 },
+  { id: uid(), name: "Obstetrícia", icon: "Baby", description: "Pré-natal e fetal", color: "300", order: 2 },
+  { id: uid(), name: "Radiologia", icon: "ScanLine", description: "Geral / abdômen / partes moles", color: "200", order: 3 },
+  { id: uid(), name: "Vascular", icon: "Activity", description: "Doppler arterial e venoso", color: "150", order: 4 },
+  { id: uid(), name: "POCUS", icon: "Stethoscope", description: "Point-of-care / UTI / emergência", color: "60", order: 5 },
+  { id: uid(), name: "IA Clínica", icon: "Sparkles", description: "Auto-medição assistida por IA", color: "260", order: 6 },
 ];
 
 const seedDiffs: Differential[] = [
-  { id: uid(), label: "Imagem premium 4K", icon: "Monitor" },
-  { id: uid(), label: "IA de auto-medição", icon: "Wand2" },
-  { id: uid(), label: "Workflow rápido", icon: "Zap" },
-  { id: uid(), label: "Conectividade DICOM", icon: "Wifi" },
-  { id: uid(), label: "Ergonomia premium", icon: "Hand" },
-  { id: uid(), label: "Portátil leve", icon: "Briefcase" },
+  { id: uid(), label: "Crystal Architecture™", icon: "Gem", order: 0 },
+  { id: uid(), label: "S-Vue™ Transducers", icon: "Radio", order: 1 },
+  { id: uid(), label: "BiometryAssist™ (IA)", icon: "Wand2", order: 2 },
+  { id: uid(), label: "HeartAssist™", icon: "HeartPulse", order: 3 },
+  { id: uid(), label: "5D Heart Color™", icon: "Layers", order: 4 },
+  { id: uid(), label: "Portátil com bateria", icon: "BatteryCharging", order: 5 },
+  { id: uid(), label: "Workflow rápido", icon: "Zap", order: 6 },
+  { id: uid(), label: "Conectividade DICOM", icon: "Wifi", order: 7 },
+  { id: uid(), label: "Licença perpétua", icon: "ShieldCheck", order: 8 },
 ];
 
 const seedBrands: Brand[] = [
-  { id: uid(), name: "Minha Empresa", isOwn: true, color: "270", order: 0 },
-  { id: uid(), name: "Concorrente A", color: "10", order: 1 },
-  { id: uid(), name: "Concorrente B", color: "210", order: 2 },
+  { id: uid(), name: "Samsung Medison", isOwn: true, color: "245", order: 0 },
+  { id: uid(), name: "GE Healthcare", color: "200", order: 1 },
+  { id: uid(), name: "Philips", color: "210", order: 2 },
+  { id: uid(), name: "Siemens Healthineers", color: "180", order: 3 },
 ];
 
 const seedEquipments = (
