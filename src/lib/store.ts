@@ -81,22 +81,37 @@ interface AppState {
   categories: Category[];
   differentials: Differential[];
   equipments: Equipment[];
+  brands: Brand[];
+  savedComparisons: SavedComparison[];
 
   addField: (f: Omit<SpecField, "id">) => void;
   updateField: (id: string, patch: Partial<SpecField>) => void;
   removeField: (id: string) => void;
+  reorderFields: (ids: string[]) => void;
 
   addCategory: (c: Omit<Category, "id">) => void;
   updateCategory: (id: string, patch: Partial<Category>) => void;
   removeCategory: (id: string) => void;
+  reorderCategories: (ids: string[]) => void;
 
   addDifferential: (d: Omit<Differential, "id">) => void;
   updateDifferential: (id: string, patch: Partial<Differential>) => void;
   removeDifferential: (id: string) => void;
+  reorderDifferentials: (ids: string[]) => void;
+
+  addBrand: (b: Omit<Brand, "id">) => string;
+  updateBrand: (id: string, patch: Partial<Brand>) => void;
+  removeBrand: (id: string) => void;
+  setOwnBrand: (id: string) => void;
 
   addEquipment: (e: Omit<Equipment, "id" | "createdAt">) => void;
   updateEquipment: (id: string, patch: Partial<Equipment>) => void;
   removeEquipment: (id: string) => void;
+  reorderEquipments: (ids: string[]) => void;
+  duplicateEquipment: (id: string) => void;
+
+  addSavedComparison: (c: Omit<SavedComparison, "id" | "createdAt">) => string;
+  removeSavedComparison: (id: string) => void;
 
   resetSeed: () => void;
 }
