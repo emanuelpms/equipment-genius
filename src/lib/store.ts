@@ -314,6 +314,8 @@ export const useStore = create<AppState>()(
       categories: initialCats,
       differentials: initialDiffs,
       equipments: initialEquips,
+      brands: initialBrands,
+      savedComparisons: [],
 
       addField: (f) => set((s) => ({ fields: [...s.fields, { ...f, id: uid() }] })),
       updateField: (id, patch) => set((s) => ({ fields: s.fields.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -329,6 +331,9 @@ export const useStore = create<AppState>()(
             : s.equipments,
         };
       }),
+      reorderFields: (ids) => set((s) => ({
+        fields: ids.map((id, i) => ({ ...s.fields.find((f) => f.id === id)!, order: i })).filter(Boolean),
+      })),
 
       addCategory: (c) => set((s) => ({ categories: [...s.categories, { ...c, id: uid() }] })),
       updateCategory: (id, patch) => set((s) => ({ categories: s.categories.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -340,6 +345,9 @@ export const useStore = create<AppState>()(
           bestFor: e.bestFor.filter((c) => c !== id),
         })),
       })),
+      reorderCategories: (ids) => set((s) => ({
+        categories: ids.map((id, i) => ({ ...s.categories.find((c) => c.id === id)!, order: i })),
+      })),
 
       addDifferential: (d) => set((s) => ({ differentials: [...s.differentials, { ...d, id: uid() }] })),
       updateDifferential: (id, patch) => set((s) => ({ differentials: s.differentials.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
@@ -347,19 +355,53 @@ export const useStore = create<AppState>()(
         differentials: s.differentials.filter((x) => x.id !== id),
         equipments: s.equipments.map((e) => ({ ...e, differentials: e.differentials.filter((d) => d !== id) })),
       })),
+      reorderDifferentials: (ids) => set((s) => ({
+        differentials: ids.map((id, i) => ({ ...s.differentials.find((d) => d.id === id)!, order: i })),
+      })),
+
+      addBrand: (b) => {
+        const id = uid();
+        set((s) => ({ brands: [...s.brands, { ...b, id, order: s.brands.length }] }));
+        return id;
+      },
+      updateBrand: (id, patch) => set((s) => ({ brands: s.brands.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
+      removeBrand: (id) => set((s) => ({
+        brands: s.brands.filter((x) => x.id !== id),
+        equipments: s.equipments.map((e) => (e.brandId === id ? { ...e, brandId: undefined } : e)),
+      })),
+      setOwnBrand: (id) => set((s) => ({
+        brands: s.brands.map((b) => ({ ...b, isOwn: b.id === id })),
+      })),
 
       addEquipment: (e) => set((s) => ({ equipments: [...s.equipments, { ...e, id: uid(), createdAt: Date.now() }] })),
       updateEquipment: (id, patch) => set((s) => ({ equipments: s.equipments.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
       removeEquipment: (id) => set((s) => ({ equipments: s.equipments.filter((x) => x.id !== id) })),
+      reorderEquipments: (ids) => set((s) => ({
+        equipments: ids.map((id, i) => ({ ...s.equipments.find((e) => e.id === id)!, order: i })),
+      })),
+      duplicateEquipment: (id) => set((s) => {
+        const e = s.equipments.find((x) => x.id === id);
+        if (!e) return s;
+        return { equipments: [...s.equipments, { ...e, id: uid(), name: `${e.name} (cópia)`, createdAt: Date.now() }] };
+      }),
+
+      addSavedComparison: (c) => {
+        const id = uid();
+        set((s) => ({ savedComparisons: [...s.savedComparisons, { ...c, id, createdAt: Date.now() }] }));
+        return id;
+      },
+      removeSavedComparison: (id) => set((s) => ({ savedComparisons: s.savedComparisons.filter((x) => x.id !== id) })),
 
       resetSeed: () => set({
         fields: initialFields,
         categories: initialCats,
         differentials: initialDiffs,
         equipments: initialEquips,
+        brands: initialBrands,
+        savedComparisons: [],
       }),
     }),
-    { name: "equip-catalog-v1" }
+    { name: "equip-catalog-v2" }
   )
 );
 
