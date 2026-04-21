@@ -480,7 +480,7 @@ export const useStore = create<AppState>()(
         savedComparisons: [],
       }),
     }),
-    { name: "equip-catalog-v2" }
+    { name: "samsung-medison-catalog-v1" }
   )
 );
 
