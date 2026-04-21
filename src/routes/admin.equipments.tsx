@@ -11,8 +11,9 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+  arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { SortableItem } from "@/components/SortableItem";
 
 export const Route = createFileRoute("/admin/equipments")({ component: EquipmentsAdmin });
@@ -200,8 +201,6 @@ function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDup
 }
 
 function SortableTableRow({ id, highlighted, children }: { id: string; highlighted?: boolean; children: React.ReactNode }) {
-  const { useSortable } = require("@dnd-kit/sortable") as typeof import("@dnd-kit/sortable");
-  const { CSS } = require("@dnd-kit/utilities") as typeof import("@dnd-kit/utilities");
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   return (
     <tr ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.6 : 1 }}
