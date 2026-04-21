@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
-import { useStore, tierMeta, type Equipment, type Tier } from "@/lib/store";
+import { useStore, tierMeta, type Equipment, type Tier, type SpecField } from "@/lib/store";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
 import { Check, X, Plus, Star, Save, Maximize2, Minimize2, Bookmark, Trash2, Search, ChevronDown, Building2, ArrowLeft } from "lucide-react";
@@ -237,7 +237,7 @@ function Compare() {
   );
 }
 
-function GroupBlock({ group, fields, all, brands }: { group: string; fields: ReturnType<typeof sortByOrder>; all: Equipment[]; brands: ReturnType<typeof useStore.getState>["brands"] }) {
+function GroupBlock({ group, fields, all, brands }: { group: string; fields: SpecField[]; all: Equipment[]; brands: ReturnType<typeof useStore.getState>["brands"] }) {
   return (
     <>
       <tr>
