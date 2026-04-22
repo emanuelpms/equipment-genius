@@ -193,11 +193,12 @@ function EquipmentsAdmin() {
   );
 }
 
-function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDuplicate, onDelete }: {
+function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDuplicate, onDelete, onRequestNewBrand }: {
   e: Equipment; fields: SpecField[]; brands: ReturnType<typeof useStore.getState>["brands"];
   onUpdate: (p: Partial<Equipment>) => void;
   onUpdateSpec: (key: string, v: string | number | boolean | undefined) => void;
-  onEdit: () => void; onDuplicate: () => void; onDelete: () => void;
+  onEdit: () => void; onDuplicate: () => string | undefined | void; onDelete: () => void;
+  onRequestNewBrand: () => void;
 }) {
   const brand = brands.find((b) => b.id === e.brandId);
   return (
@@ -208,10 +209,14 @@ function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDup
         {brand?.isOwn && <div className="flex items-center gap-1 text-[10px] text-primary mt-0.5 px-1.5"><Star className="h-2.5 w-2.5 fill-current" />Seu produto</div>}
       </td>
       <td className="p-3 align-middle">
-        <select value={e.brandId ?? ""} onChange={(ev) => onUpdate({ brandId: ev.target.value || undefined })}
+        <select value={e.brandId ?? ""} onChange={(ev) => {
+          if (ev.target.value === "__new__") { onRequestNewBrand(); return; }
+          onUpdate({ brandId: ev.target.value || undefined });
+        }}
           className="w-full bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40">
           <option value="">— sem marca —</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}{b.isOwn ? " ★" : ""}</option>)}
+          <option value="__new__">+ Nova marca…</option>
         </select>
       </td>
       <td className="p-3 align-middle">
