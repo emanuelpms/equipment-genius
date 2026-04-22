@@ -4,7 +4,7 @@ import { useStore, tierMeta, type Equipment, type Tier, type SpecField } from "@
 import { PageHeader } from "@/components/PageHeader";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
-import { Plus, Trash2, Search, X, Save, Copy, Settings2, Star, Check } from "lucide-react";
+import { Plus, Trash2, Search, X, Save, Copy, Settings2, Star, Check, Download, Upload } from "lucide-react";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -31,11 +31,14 @@ function EquipmentsAdmin() {
   const {
     equipments, fields, categories, differentials, brands,
     addEquipment, updateEquipment, removeEquipment, reorderEquipments, duplicateEquipment,
+    addBrand, importCatalog,
   } = useStore();
   const [editing, setEditing] = useState<Equipment | null>(null);
   const [q, setQ] = useState("");
   const [tierFilter, setTierFilter] = useState<Tier | "all">("all");
   const [brandFilter, setBrandFilter] = useState<string | "all">("all");
+  const [newBrandFor, setNewBrandFor] = useState<string | null>(null); // equipment id awaiting brand creation
+  const [importOpen, setImportOpen] = useState(false);
 
   const ownBrand = brands.find((b) => b.isOwn);
   const sortedEquips = sortByOrder(equipments);
