@@ -80,10 +80,20 @@ function EquipmentsAdmin() {
         title="Equipamentos"
         subtitle="Edite tudo direto na tabela. Arraste para reordenar. Clique em ⚙ para detalhes (categorias, diferenciais, fotos)."
         action={
-          <button onClick={() => addEquipment(emptyEq(ownBrand?.id))}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background text-sm font-semibold shadow-glow">
-            <Plus className="h-4 w-4" /> Novo equipamento
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => exportCatalog({ fields, categories, differentials, brands, equipments })}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border hover:border-primary text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Download className="h-3.5 w-3.5" /> Exportar
+            </button>
+            <button onClick={() => setImportOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border hover:border-primary text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Upload className="h-3.5 w-3.5" /> Importar
+            </button>
+            <button onClick={() => addEquipment(emptyEq(ownBrand?.id))}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background text-sm font-semibold shadow-glow">
+              <Plus className="h-4 w-4" /> Novo equipamento
+            </button>
+          </div>
         }
       />
 
@@ -136,11 +146,18 @@ function EquipmentsAdmin() {
                     onEdit={() => setEditing(e)}
                     onDuplicate={() => duplicateEquipment(e.id)}
                     onDelete={() => confirm(`Remover ${e.name}?`) && removeEquipment(e.id)}
+                    onRequestNewBrand={() => setNewBrandFor(e.id)}
                   />
                 ))}
                 {filtered.length === 0 && (
                   <tr><td colSpan={visibleFields.length + 5} className="text-center py-16 text-muted-foreground text-sm">Nenhum equipamento. Clique em "Novo equipamento" para começar.</td></tr>
                 )}
+                <QuickAddRow
+                  colSpan={visibleFields.length + 5}
+                  brands={brands}
+                  defaultBrandId={ownBrand?.id}
+                  onAdd={(payload) => addEquipment({ ...emptyEq(payload.brandId), name: payload.name, tier: payload.tier, brandId: payload.brandId })}
+                />
               </tbody>
             </SortableContext>
           </table>
@@ -152,6 +169,24 @@ function EquipmentsAdmin() {
           eq={editing}
           onClose={() => setEditing(null)}
           onSave={(p) => { updateEquipment(editing.id, p); setEditing(null); }}
+        />
+      )}
+
+      {newBrandFor && (
+        <QuickAddBrandDialog
+          onClose={() => setNewBrandFor(null)}
+          onCreate={(name) => {
+            const id = addBrand({ name });
+            updateEquipment(newBrandFor, { brandId: id });
+            setNewBrandFor(null);
+          }}
+        />
+      )}
+
+      {importOpen && (
+        <ImportDialog
+          onClose={() => setImportOpen(false)}
+          onImport={(data, mode) => { importCatalog(data, mode); setImportOpen(false); }}
         />
       )}
     </div>
