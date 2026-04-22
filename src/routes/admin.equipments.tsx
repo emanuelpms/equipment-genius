@@ -4,7 +4,7 @@ import { useStore, tierMeta, type Equipment, type Tier, type SpecField } from "@
 import { PageHeader } from "@/components/PageHeader";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
-import { Plus, Trash2, Search, X, Save, Copy, Settings2, Star, Check } from "lucide-react";
+import { Plus, Trash2, Search, X, Save, Copy, Settings2, Star, Check, Download, Upload } from "lucide-react";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -31,11 +31,14 @@ function EquipmentsAdmin() {
   const {
     equipments, fields, categories, differentials, brands,
     addEquipment, updateEquipment, removeEquipment, reorderEquipments, duplicateEquipment,
+    addBrand, importCatalog,
   } = useStore();
   const [editing, setEditing] = useState<Equipment | null>(null);
   const [q, setQ] = useState("");
   const [tierFilter, setTierFilter] = useState<Tier | "all">("all");
   const [brandFilter, setBrandFilter] = useState<string | "all">("all");
+  const [newBrandFor, setNewBrandFor] = useState<string | null>(null); // equipment id awaiting brand creation
+  const [importOpen, setImportOpen] = useState(false);
 
   const ownBrand = brands.find((b) => b.isOwn);
   const sortedEquips = sortByOrder(equipments);
@@ -77,10 +80,20 @@ function EquipmentsAdmin() {
         title="Equipamentos"
         subtitle="Edite tudo direto na tabela. Arraste para reordenar. Clique em ⚙ para detalhes (categorias, diferenciais, fotos)."
         action={
-          <button onClick={() => addEquipment(emptyEq(ownBrand?.id))}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background text-sm font-semibold shadow-glow">
-            <Plus className="h-4 w-4" /> Novo equipamento
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => exportCatalog({ fields, categories, differentials, brands, equipments })}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border hover:border-primary text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Download className="h-3.5 w-3.5" /> Exportar
+            </button>
+            <button onClick={() => setImportOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg border border-border hover:border-primary text-xs font-semibold text-muted-foreground hover:text-foreground">
+              <Upload className="h-3.5 w-3.5" /> Importar
+            </button>
+            <button onClick={() => addEquipment(emptyEq(ownBrand?.id))}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background text-sm font-semibold shadow-glow">
+              <Plus className="h-4 w-4" /> Novo equipamento
+            </button>
+          </div>
         }
       />
 
@@ -133,11 +146,18 @@ function EquipmentsAdmin() {
                     onEdit={() => setEditing(e)}
                     onDuplicate={() => duplicateEquipment(e.id)}
                     onDelete={() => confirm(`Remover ${e.name}?`) && removeEquipment(e.id)}
+                    onRequestNewBrand={() => setNewBrandFor(e.id)}
                   />
                 ))}
                 {filtered.length === 0 && (
                   <tr><td colSpan={visibleFields.length + 5} className="text-center py-16 text-muted-foreground text-sm">Nenhum equipamento. Clique em "Novo equipamento" para começar.</td></tr>
                 )}
+                <QuickAddRow
+                  colSpan={visibleFields.length + 5}
+                  brands={brands}
+                  defaultBrandId={ownBrand?.id}
+                  onAdd={(payload) => addEquipment({ ...emptyEq(payload.brandId), name: payload.name, tier: payload.tier, brandId: payload.brandId })}
+                />
               </tbody>
             </SortableContext>
           </table>
@@ -151,15 +171,34 @@ function EquipmentsAdmin() {
           onSave={(p) => { updateEquipment(editing.id, p); setEditing(null); }}
         />
       )}
+
+      {newBrandFor && (
+        <QuickAddBrandDialog
+          onClose={() => setNewBrandFor(null)}
+          onCreate={(name) => {
+            const id = addBrand({ name });
+            updateEquipment(newBrandFor, { brandId: id });
+            setNewBrandFor(null);
+          }}
+        />
+      )}
+
+      {importOpen && (
+        <ImportDialog
+          onClose={() => setImportOpen(false)}
+          onImport={(data, mode) => { importCatalog(data, mode); setImportOpen(false); }}
+        />
+      )}
     </div>
   );
 }
 
-function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDuplicate, onDelete }: {
+function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDuplicate, onDelete, onRequestNewBrand }: {
   e: Equipment; fields: SpecField[]; brands: ReturnType<typeof useStore.getState>["brands"];
   onUpdate: (p: Partial<Equipment>) => void;
   onUpdateSpec: (key: string, v: string | number | boolean | undefined) => void;
-  onEdit: () => void; onDuplicate: () => void; onDelete: () => void;
+  onEdit: () => void; onDuplicate: () => string | undefined | void; onDelete: () => void;
+  onRequestNewBrand: () => void;
 }) {
   const brand = brands.find((b) => b.id === e.brandId);
   return (
@@ -170,10 +209,14 @@ function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDup
         {brand?.isOwn && <div className="flex items-center gap-1 text-[10px] text-primary mt-0.5 px-1.5"><Star className="h-2.5 w-2.5 fill-current" />Seu produto</div>}
       </td>
       <td className="p-3 align-middle">
-        <select value={e.brandId ?? ""} onChange={(ev) => onUpdate({ brandId: ev.target.value || undefined })}
+        <select value={e.brandId ?? ""} onChange={(ev) => {
+          if (ev.target.value === "__new__") { onRequestNewBrand(); return; }
+          onUpdate({ brandId: ev.target.value || undefined });
+        }}
           className="w-full bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40">
           <option value="">— sem marca —</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}{b.isOwn ? " ★" : ""}</option>)}
+          <option value="__new__">+ Nova marca…</option>
         </select>
       </td>
       <td className="p-3 align-middle">
@@ -397,6 +440,148 @@ function HighlightsEditor({ value, onChange }: { value: string[]; onChange: (v: 
             <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="h-4 w-4 rounded-full hover:bg-destructive/30 grid place-items-center"><X className="h-3 w-3" /></button>
           </span>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ───────────────── Quick add: row at bottom of the table ─────────────────
+function QuickAddRow({ colSpan, brands, defaultBrandId, onAdd }: {
+  colSpan: number;
+  brands: ReturnType<typeof useStore.getState>["brands"];
+  defaultBrandId?: string;
+  onAdd: (p: { name: string; brandId?: string; tier: Tier }) => void;
+}) {
+  const [name, setName] = useState("");
+  const [brandId, setBrandId] = useState<string | undefined>(defaultBrandId);
+  const [tier, setTier] = useState<Tier>("medium");
+  const submit = () => {
+    if (!name.trim()) return;
+    onAdd({ name: name.trim(), brandId, tier });
+    setName("");
+  };
+  return (
+    <tr className="border-t border-border bg-primary/5">
+      <td className="p-3 align-middle text-center"><Plus className="h-3.5 w-3.5 text-primary mx-auto" /></td>
+      <td className="p-3 align-middle" colSpan={1}>
+        <input value={name} onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder="Digite o nome do equipamento e Enter…"
+          className="w-full bg-input/40 border border-dashed border-primary/40 focus:border-primary rounded-md px-2.5 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40" />
+      </td>
+      <td className="p-3 align-middle">
+        <select value={brandId ?? ""} onChange={(e) => setBrandId(e.target.value || undefined)}
+          className="w-full bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs">
+          <option value="">— sem marca —</option>
+          {brands.map((b) => <option key={b.id} value={b.id}>{b.name}{b.isOwn ? " ★" : ""}</option>)}
+        </select>
+      </td>
+      <td className="p-3 align-middle">
+        <select value={tier} onChange={(e) => setTier(e.target.value as Tier)}
+          className="w-full bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs font-semibold">
+          <option value="premium">Premium</option>
+          <option value="medium">Medium</option>
+          <option value="low">Essential</option>
+        </select>
+      </td>
+      <td colSpan={Math.max(1, colSpan - 5)} className="p-3 text-xs text-muted-foreground italic">
+        Pressione Enter ou clique em Adicionar →
+      </td>
+      <td className="p-3 align-middle text-right sticky right-0 bg-card/80 backdrop-blur">
+        <button onClick={submit} disabled={!name.trim()}
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md bg-primary text-background text-xs font-bold disabled:opacity-40">
+          <Plus className="h-3 w-3" /> Adicionar
+        </button>
+      </td>
+    </tr>
+  );
+}
+
+// ───────────────── Quick add: nova marca inline ─────────────────
+function QuickAddBrandDialog({ onClose, onCreate }: { onClose: () => void; onCreate: (name: string) => void }) {
+  const [name, setName] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-background/80 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="font-display font-bold text-lg mb-1">Nova marca concorrente</div>
+        <div className="text-xs text-muted-foreground mb-4">Cadastro rápido — você pode adicionar logo e ajustes em Admin → Marcas.</div>
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) onCreate(name.trim()); }}
+          placeholder="Ex: Mindray, Canon, Fujifilm…"
+          className="w-full bg-input/40 border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary mb-4" />
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent">Cancelar</button>
+          <button onClick={() => name.trim() && onCreate(name.trim())} disabled={!name.trim()}
+            className="px-4 py-2 rounded-lg bg-primary text-background text-sm font-semibold disabled:opacity-40">Criar marca</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ───────────────── Import / Export do catálogo ─────────────────
+function exportCatalog(data: object) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `catalogo-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function ImportDialog({ onClose, onImport }: {
+  onClose: () => void;
+  onImport: (data: Record<string, unknown>, mode: "merge" | "replace") => void;
+}) {
+  const [text, setText] = useState("");
+  const [mode, setMode] = useState<"merge" | "replace">("merge");
+  const [error, setError] = useState("");
+
+  const onFile = (file: File) => {
+    const r = new FileReader();
+    r.onload = () => setText(String(r.result ?? ""));
+    r.readAsText(file);
+  };
+
+  const submit = () => {
+    try {
+      const parsed = JSON.parse(text);
+      onImport(parsed, mode);
+    } catch {
+      setError("JSON inválido. Cole o conteúdo exportado anteriormente.");
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-background/80 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-card border border-border rounded-2xl p-6 max-w-2xl w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="font-display font-bold text-lg">Importar catálogo</div>
+            <div className="text-xs text-muted-foreground">Cole o JSON ou escolha um arquivo exportado.</div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-md hover:bg-accent"><X className="h-4 w-4" /></button>
+        </div>
+        <input type="file" accept="application/json" onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          className="block w-full text-xs text-muted-foreground file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-accent file:text-foreground file:text-xs file:font-semibold mb-3" />
+        <textarea value={text} onChange={(e) => { setText(e.target.value); setError(""); }} rows={8}
+          placeholder='{ "equipments": [...], "brands": [...] }'
+          className="w-full bg-input/40 border border-border rounded-lg p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/40 mb-3" />
+        <div className="flex items-center gap-4 mb-4 text-xs">
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" checked={mode === "merge"} onChange={() => setMode("merge")} /> Mesclar (mantém os existentes)
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" checked={mode === "replace"} onChange={() => setMode("replace")} /> Substituir tudo
+          </label>
+        </div>
+        {error && <div className="text-xs text-destructive mb-3">{error}</div>}
+        <div className="flex gap-2 justify-end">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-muted-foreground hover:bg-accent">Cancelar</button>
+          <button onClick={submit} disabled={!text.trim()}
+            className="px-4 py-2 rounded-lg bg-primary text-background text-sm font-semibold disabled:opacity-40">Importar</button>
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, type Brand } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
-import { Plus, Trash2, Star, Image as ImageIcon, X, Building2 } from "lucide-react";
+import { Plus, Trash2, Star, Image as ImageIcon, X, Building2, PackagePlus } from "lucide-react";
 import { PhotoPicker } from "@/components/PhotoPicker";
 
 export const Route = createFileRoute("/admin/brands")({ component: BrandsAdmin });
 
 function BrandsAdmin() {
-  const { brands, addBrand, updateBrand, removeBrand, setOwnBrand, equipments } = useStore();
+  const { brands, addBrand, updateBrand, removeBrand, setOwnBrand, equipments, addEquipment } = useStore();
+  const nav = useNavigate();
   const [name, setName] = useState("");
 
   const submit = () => {
@@ -44,6 +45,17 @@ function BrandsAdmin() {
           return (
             <BrandCard key={b.id} b={b} count={count} onUpdate={(p) => updateBrand(b.id, p)}
               onSetOwn={() => setOwnBrand(b.id)}
+              onAddModel={() => {
+                const promptName = prompt(`Nome do novo equipamento da ${b.name}:`);
+                if (!promptName?.trim()) return;
+                addEquipment({
+                  name: promptName.trim(), shortName: "", brandId: b.id, tier: "medium",
+                  tagline: "", description: "", imageUrl: "", photos: [],
+                  categories: [], bestFor: [], differentials: [], specs: {}, highlights: [],
+                  releaseYear: new Date().getFullYear(),
+                });
+                nav({ to: "/admin/equipments" });
+              }}
               onDelete={() => confirm(`Remover marca "${b.name}"? Os equipamentos ficarão sem marca.`) && removeBrand(b.id)} />
           );
         })}
@@ -52,10 +64,11 @@ function BrandsAdmin() {
   );
 }
 
-function BrandCard({ b, count, onUpdate, onSetOwn, onDelete }: {
+function BrandCard({ b, count, onUpdate, onSetOwn, onAddModel, onDelete }: {
   b: Brand; count: number;
   onUpdate: (p: Partial<Brand>) => void;
   onSetOwn: () => void;
+  onAddModel: () => void;
   onDelete: () => void;
 }) {
   const [editingLogo, setEditingLogo] = useState(false);
@@ -85,11 +98,16 @@ function BrandCard({ b, count, onUpdate, onSetOwn, onDelete }: {
         <button onClick={onDelete} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/15"><Trash2 className="h-4 w-4" /></button>
       </div>
 
-      {!b.isOwn && (
-        <button onClick={onSetOwn} className="w-full text-xs px-3 py-2 rounded-lg border border-border hover:border-primary hover:bg-primary/10 hover:text-primary transition font-medium">
-          Marcar como minha empresa
+      <div className="flex flex-col gap-1.5">
+        <button onClick={onAddModel} className="w-full text-xs px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary transition font-semibold inline-flex items-center justify-center gap-1.5">
+          <PackagePlus className="h-3.5 w-3.5" /> Novo modelo desta marca
         </button>
-      )}
+        {!b.isOwn && (
+          <button onClick={onSetOwn} className="w-full text-xs px-3 py-2 rounded-lg border border-border hover:border-primary hover:bg-primary/10 hover:text-primary transition font-medium">
+            Marcar como minha empresa
+          </button>
+        )}
+      </div>
 
       {editingLogo && (
         <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setEditingLogo(false)}>

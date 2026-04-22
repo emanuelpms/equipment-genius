@@ -104,11 +104,13 @@ interface AppState {
   removeBrand: (id: string) => void;
   setOwnBrand: (id: string) => void;
 
-  addEquipment: (e: Omit<Equipment, "id" | "createdAt">) => void;
+  addEquipment: (e: Omit<Equipment, "id" | "createdAt">) => string;
   updateEquipment: (id: string, patch: Partial<Equipment>) => void;
   removeEquipment: (id: string) => void;
   reorderEquipments: (ids: string[]) => void;
-  duplicateEquipment: (id: string) => void;
+  duplicateEquipment: (id: string) => string | undefined;
+
+  importCatalog: (data: Partial<Pick<AppState, "fields" | "categories" | "differentials" | "brands" | "equipments">>, mode: "merge" | "replace") => void;
 
   addSavedComparison: (c: Omit<SavedComparison, "id" | "createdAt">) => string;
   removeSavedComparison: (id: string) => void;
@@ -452,16 +454,47 @@ export const useStore = create<AppState>()(
         brands: s.brands.map((b) => ({ ...b, isOwn: b.id === id })),
       })),
 
-      addEquipment: (e) => set((s) => ({ equipments: [...s.equipments, { ...e, id: uid(), createdAt: Date.now() }] })),
+      addEquipment: (e) => {
+        const id = uid();
+        set((s) => ({ equipments: [...s.equipments, { ...e, id, createdAt: Date.now(), order: e.order ?? s.equipments.length }] }));
+        return id;
+      },
       updateEquipment: (id, patch) => set((s) => ({ equipments: s.equipments.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
       removeEquipment: (id) => set((s) => ({ equipments: s.equipments.filter((x) => x.id !== id) })),
       reorderEquipments: (ids) => set((s) => ({
         equipments: ids.map((id, i) => ({ ...s.equipments.find((e) => e.id === id)!, order: i })),
       })),
-      duplicateEquipment: (id) => set((s) => {
-        const e = s.equipments.find((x) => x.id === id);
-        if (!e) return s;
-        return { equipments: [...s.equipments, { ...e, id: uid(), name: `${e.name} (cópia)`, createdAt: Date.now() }] };
+      duplicateEquipment: (id) => {
+        const e = get().equipments.find((x) => x.id === id);
+        if (!e) return undefined;
+        const newId = uid();
+        set((s) => ({ equipments: [...s.equipments, { ...e, id: newId, name: `${e.name} (cópia)`, createdAt: Date.now(), order: s.equipments.length }] }));
+        return newId;
+      },
+
+      importCatalog: (data, mode) => set((s) => {
+        if (mode === "replace") {
+          return {
+            fields: data.fields ?? s.fields,
+            categories: data.categories ?? s.categories,
+            differentials: data.differentials ?? s.differentials,
+            brands: data.brands ?? s.brands,
+            equipments: data.equipments ?? s.equipments,
+          };
+        }
+        const mergeBy = <T extends { id: string }>(cur: T[], incoming?: T[]) => {
+          if (!incoming) return cur;
+          const map = new Map(cur.map((x) => [x.id, x]));
+          incoming.forEach((x) => map.set(x.id, { ...map.get(x.id), ...x }));
+          return Array.from(map.values());
+        };
+        return {
+          fields: mergeBy(s.fields, data.fields),
+          categories: mergeBy(s.categories, data.categories),
+          differentials: mergeBy(s.differentials, data.differentials),
+          brands: mergeBy(s.brands, data.brands),
+          equipments: mergeBy(s.equipments, data.equipments),
+        };
       }),
 
       addSavedComparison: (c) => {
