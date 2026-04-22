@@ -1,14 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useStore, type Brand } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
-import { Plus, Trash2, Star, Image as ImageIcon, X, Building2 } from "lucide-react";
+import { Plus, Trash2, Star, Image as ImageIcon, X, Building2, PackagePlus } from "lucide-react";
 import { PhotoPicker } from "@/components/PhotoPicker";
 
 export const Route = createFileRoute("/admin/brands")({ component: BrandsAdmin });
 
 function BrandsAdmin() {
-  const { brands, addBrand, updateBrand, removeBrand, setOwnBrand, equipments } = useStore();
+  const { brands, addBrand, updateBrand, removeBrand, setOwnBrand, equipments, addEquipment } = useStore();
+  const nav = useNavigate();
   const [name, setName] = useState("");
 
   const submit = () => {
@@ -44,6 +45,17 @@ function BrandsAdmin() {
           return (
             <BrandCard key={b.id} b={b} count={count} onUpdate={(p) => updateBrand(b.id, p)}
               onSetOwn={() => setOwnBrand(b.id)}
+              onAddModel={() => {
+                const promptName = prompt(`Nome do novo equipamento da ${b.name}:`);
+                if (!promptName?.trim()) return;
+                addEquipment({
+                  name: promptName.trim(), shortName: "", brandId: b.id, tier: "medium",
+                  tagline: "", description: "", imageUrl: "", photos: [],
+                  categories: [], bestFor: [], differentials: [], specs: {}, highlights: [],
+                  releaseYear: new Date().getFullYear(),
+                });
+                nav({ to: "/admin/equipments" });
+              }}
               onDelete={() => confirm(`Remover marca "${b.name}"? Os equipamentos ficarão sem marca.`) && removeBrand(b.id)} />
           );
         })}
@@ -52,10 +64,11 @@ function BrandsAdmin() {
   );
 }
 
-function BrandCard({ b, count, onUpdate, onSetOwn, onDelete }: {
+function BrandCard({ b, count, onUpdate, onSetOwn, onAddModel, onDelete }: {
   b: Brand; count: number;
   onUpdate: (p: Partial<Brand>) => void;
   onSetOwn: () => void;
+  onAddModel: () => void;
   onDelete: () => void;
 }) {
   const [editingLogo, setEditingLogo] = useState(false);
