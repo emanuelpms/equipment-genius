@@ -1,67 +1,119 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState, useEffect } from "react";
 import { useStore, tierMeta, type Equipment, type Tier, type SpecField } from "@/lib/store";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
-import { Check, X, Plus, Star, Save, Maximize2, Minimize2, Bookmark, Trash2, Search, ChevronDown, Building2, ArrowLeft } from "lucide-react";
+import {
+  Check, X, Plus, Star, Save, Maximize2, Minimize2, Bookmark, Trash2, Search,
+  Building2, ArrowLeft, Trophy, TrendingUp, Settings2, ChevronDown, ChevronUp,
+} from "lucide-react";
 
 export const Route = createFileRoute("/showcase/compare")({ component: Compare });
+
+type Mode = "vs-competitors" | "vs-own" | "free";
 
 function sortByOrder<T extends { order?: number }>(arr: T[]): T[] {
   return [...arr].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 }
 
+// ────────────────────────────────────────────────────────────
+// Scoring: every visible field contributes
+//   boolean true = +1, numeric > others = +1, text non-empty = +0.25
+// Returns score per equipment id and per-equip list of advantages
+// ────────────────────────────────────────────────────────────
+function computeScores(equips: Equipment[], fields: SpecField[]) {
+  const scores: Record<string, number> = {};
+  const advantages: Record<string, { field: SpecField; value: string }[]> = {};
+  equips.forEach((e) => { scores[e.id] = 0; advantages[e.id] = []; });
+
+  fields.forEach((f) => {
+    const values = equips.map((e) => e.specs[f.key]);
+    if (f.type === "boolean") {
+      equips.forEach((e, i) => {
+        if (values[i] === true) {
+          scores[e.id] += 1;
+          if (values.filter((v) => v === true).length < equips.length) {
+            advantages[e.id].push({ field: f, value: "Sim" });
+          }
+        }
+      });
+    } else if (f.type === "number") {
+      const nums = values.map((v) => (typeof v === "number" ? v : NaN));
+      const valid = nums.filter((n) => !isNaN(n));
+      if (valid.length === 0) return;
+      // for "weight" lower is better; for everything else higher is better
+      const lowerIsBetter = f.key === "weight";
+      const best = lowerIsBetter ? Math.min(...valid) : Math.max(...valid);
+      equips.forEach((e, i) => {
+        if (!isNaN(nums[i]) && nums[i] === best && valid.length > 1 && new Set(valid).size > 1) {
+          scores[e.id] += 1;
+          advantages[e.id].push({ field: f, value: `${nums[i]}${f.unit ? " " + f.unit : ""}${lowerIsBetter ? " (mais leve)" : " (maior)"}` });
+        }
+      });
+    } else {
+      equips.forEach((e, i) => {
+        if (values[i] !== undefined && values[i] !== "") scores[e.id] += 0.25;
+      });
+    }
+  });
+  return { scores, advantages };
+}
+
 function Compare() {
-  const { equipments, fields, categories, differentials, brands, savedComparisons, addSavedComparison, removeSavedComparison } = useStore();
-  const nav = useNavigate();
+  const { equipments, fields, brands, savedComparisons, addSavedComparison, removeSavedComparison } = useStore();
   const ownBrand = brands.find((b) => b.isOwn);
-  const ownEquips = equipments.filter((e) => ownBrand && e.brandId === ownBrand.id);
-  const competitorEquips = equipments.filter((e) => !ownBrand || e.brandId !== ownBrand.id);
+  const ownEquips = useMemo(() => equipments.filter((e) => ownBrand && e.brandId === ownBrand.id), [equipments, ownBrand]);
+  const competitorEquips = useMemo(() => equipments.filter((e) => !ownBrand || e.brandId !== ownBrand.id), [equipments, ownBrand]);
 
-  // Read query state
   const initialUrl = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
-  const initialOwn = initialUrl.get("own") ?? ownEquips[0]?.id ?? "";
-  const initialComp = (initialUrl.get("vs") ?? "").split(",").filter(Boolean);
+  const initialOwn = initialUrl.get("own") ?? "";
+  const initialIds = (initialUrl.get("ids") ?? "").split(",").filter(Boolean);
 
-  const [ownId, setOwnId] = useState<string>(initialOwn);
-  const [competitors, setCompetitors] = useState<string[]>(initialComp);
+  const [mode, setMode] = useState<Mode>("vs-competitors");
+  const [selected, setSelected] = useState<string[]>(initialIds.length ? initialIds : (initialOwn ? [initialOwn] : []));
   const [presenting, setPresenting] = useState(false);
   const [showAdder, setShowAdder] = useState(false);
-  const [showOwnPicker, setShowOwnPicker] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
-  // Auto-select first own equipment if none
   useEffect(() => {
-    if (!ownId && ownEquips[0]) setOwnId(ownEquips[0].id);
-  }, [ownEquips, ownId]);
+    if (selected.length === 0 && ownEquips[0]) setSelected([ownEquips[0].id]);
+  }, [ownEquips, selected.length]);
 
-  const own = equipments.find((e) => e.id === ownId);
-  const compEquips = competitors.map((id) => equipments.find((e) => e.id === id)).filter(Boolean) as Equipment[];
-  const all = own ? [own, ...compEquips] : compEquips;
+  const all = selected.map((id) => equipments.find((e) => e.id === id)).filter(Boolean) as Equipment[];
   const visibleFields = sortByOrder(fields);
   const groups = Array.from(new Set(visibleFields.map((f) => f.group || "Geral")));
+  const { scores, advantages } = useMemo(() => computeScores(all, visibleFields), [all, visibleFields]);
+  const maxScore = Math.max(1, ...Object.values(scores));
 
-  const addCompetitor = (id: string) => {
-    if (competitors.length >= 4) { alert("Máximo 4 concorrentes para boa visualização."); return; }
-    if (!competitors.includes(id)) setCompetitors([...competitors, id]);
+  const remove = (id: string) => setSelected((s) => s.filter((x) => x !== id));
+  const add = (id: string) => {
+    if (selected.length >= 5) { alert("Máximo 5 equipamentos para boa visualização."); return; }
+    if (!selected.includes(id)) setSelected([...selected, id]);
     setShowAdder(false);
   };
 
+  const pickerPool = mode === "vs-own" ? ownEquips
+    : mode === "vs-competitors" ? competitorEquips
+    : equipments;
+
   const saveComparison = () => {
-    if (!own || competitors.length === 0) { alert("Selecione seu equipamento e ao menos 1 concorrente."); return; }
-    const name = prompt("Nome desta comparação:", `${own.name} vs ${compEquips.map((e) => e.shortName || e.name).join(", ")}`);
+    if (all.length < 2) { alert("Selecione ao menos 2 equipamentos."); return; }
+    const own = all.find((e) => brands.find((b) => b.id === e.brandId)?.isOwn);
+    const others = all.filter((e) => e.id !== own?.id).map((e) => e.id);
+    const name = prompt("Nome desta comparação:", all.map((e) => e.shortName || e.name).join(" vs "));
     if (!name) return;
-    addSavedComparison({ name, ownEquipmentId: own.id, competitorIds: competitors });
-    alert("Comparação salva!");
+    addSavedComparison({ name, ownEquipmentId: own?.id ?? all[0].id, competitorIds: others });
   };
 
   const loadSaved = (id: string) => {
     const s = savedComparisons.find((x) => x.id === id);
     if (!s) return;
-    setOwnId(s.ownEquipmentId);
-    setCompetitors(s.competitorIds);
+    setSelected([s.ownEquipmentId, ...s.competitorIds]);
     setShowSaved(false);
   };
+
+  const toggleGroup = (g: string) => setOpenGroups((s) => ({ ...s, [g]: !s[g] }));
 
   if (!ownBrand) {
     return (
@@ -74,15 +126,15 @@ function Compare() {
   }
 
   return (
-    <div className={presenting ? "fixed inset-0 z-50 bg-background overflow-auto" : "px-6 py-6 max-w-[1600px] mx-auto"}>
+    <div className={presenting ? "fixed inset-0 z-50 bg-background overflow-auto" : "px-6 py-8 max-w-[1700px] mx-auto"}>
       {/* Top bar */}
-      <div className={`flex flex-wrap items-center gap-3 mb-6 ${presenting ? "p-6 sticky top-0 bg-background/95 backdrop-blur z-20 border-b border-border" : ""}`}>
+      <div className={`flex flex-wrap items-center gap-3 mb-6 ${presenting ? "p-6 sticky top-0 bg-background/95 backdrop-blur z-30 border-b border-border" : ""}`}>
         {presenting && (
           <button onClick={() => setPresenting(false)} className="p-2 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground"><ArrowLeft className="h-4 w-4" /></button>
         )}
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-widest text-primary font-semibold mb-0.5">{ownBrand.name} vs Concorrentes</div>
-          <h1 className="font-display text-xl md:text-2xl font-bold">Comparativo de equipamentos</h1>
+          <div className="text-[10px] uppercase tracking-widest text-primary font-semibold mb-0.5">Comparativo técnico</div>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight">{all.length > 0 ? all.map((e) => e.shortName || e.name).join(" · ") : "Selecione equipamentos"}</h1>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -90,10 +142,10 @@ function Compare() {
               <Bookmark className="h-3.5 w-3.5" /> Salvos ({savedComparisons.length})
             </button>
             {showSaved && (
-              <div className="absolute right-0 top-full mt-1 w-72 max-h-80 overflow-y-auto bg-popover border border-border rounded-xl shadow-lg z-30 p-2">
+              <div className="absolute right-0 top-full mt-1 w-72 max-h-80 overflow-y-auto bg-popover border border-border rounded-xl shadow-xl z-30 p-2">
                 {savedComparisons.length === 0 ? (
                   <div className="text-xs text-muted-foreground p-3 text-center">Nenhuma comparação salva ainda.</div>
-                ) : sortByOrder(savedComparisons.map((s, i) => ({ ...s, order: -s.createdAt }))).map((s) => (
+                ) : [...savedComparisons].sort((a, b) => b.createdAt - a.createdAt).map((s) => (
                   <div key={s.id} className="flex items-center gap-1 group hover:bg-accent rounded-md">
                     <button onClick={() => loadSaved(s.id)} className="flex-1 text-left text-xs px-3 py-2 truncate">{s.name}</button>
                     <button onClick={() => removeSavedComparison(s.id)} className="p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100"><Trash2 className="h-3 w-3" /></button>
@@ -111,175 +163,215 @@ function Compare() {
         </div>
       </div>
 
-      {/* Selectors */}
+      {/* Mode + adder */}
       {!presenting && (
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
-          <div className="glass rounded-xl p-4 border-primary/40">
-            <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-primary font-bold mb-2">
-              <Star className="h-3 w-3 fill-current" /> Seu equipamento
-            </div>
-            <button onClick={() => setShowOwnPicker(!showOwnPicker)}
-              className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg bg-input/40 border border-border hover:border-primary text-sm">
-              <div className="flex items-center gap-2 min-w-0">
-                {own ? <><TierBadge tier={own.tier} /><span className="font-semibold truncate">{own.name}</span></> : <span className="text-muted-foreground">Selecione...</span>}
-              </div>
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            </button>
-            {showOwnPicker && (
-              <div className="mt-2 max-h-60 overflow-y-auto bg-popover border border-border rounded-lg p-1 scrollbar-thin">
-                {ownEquips.map((e) => (
-                  <button key={e.id} onClick={() => { setOwnId(e.id); setShowOwnPicker(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded text-xs hover:bg-accent ${ownId === e.id ? "bg-primary/15" : ""}`}>
-                    <TierBadge tier={e.tier} />
-                    <span className="font-medium truncate">{e.name}</span>
-                  </button>
-                ))}
-                {ownEquips.length === 0 && <div className="text-xs text-muted-foreground p-3">Cadastre equipamentos da sua marca primeiro.</div>}
-              </div>
-            )}
-          </div>
-
-          <div className="glass rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Concorrentes ({competitors.length}/4)</div>
-              <button onClick={() => setShowAdder(!showAdder)} disabled={competitors.length >= 4}
-                className="inline-flex items-center gap-1 text-[10px] px-2 py-1 rounded-md bg-primary text-background font-bold disabled:opacity-40">
-                <Plus className="h-3 w-3" /> Adicionar
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <div className="inline-flex bg-card/60 border border-border rounded-lg p-1 text-xs font-semibold">
+            {([
+              { k: "vs-competitors", label: "Meus vs Concorrentes" },
+              { k: "vs-own", label: "Entre meus modelos" },
+              { k: "free", label: "Livre" },
+            ] as const).map((m) => (
+              <button key={m.k} onClick={() => setMode(m.k)}
+                className={`px-3 py-1.5 rounded-md transition ${mode === m.k ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>
+                {m.label}
               </button>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {compEquips.map((e) => {
-                const b = brands.find((x) => x.id === e.brandId);
-                return (
-                  <span key={e.id} className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-accent border border-border">
-                    <span className="text-muted-foreground text-[10px]">{b?.name ?? "—"}</span>
-                    <span className="font-medium">{e.name}</span>
-                    <button onClick={() => setCompetitors(competitors.filter((id) => id !== e.id))} className="hover:text-destructive"><X className="h-3 w-3" /></button>
-                  </span>
-                );
-              })}
-              {compEquips.length === 0 && <span className="text-xs text-muted-foreground">Nenhum concorrente selecionado.</span>}
-            </div>
-            {showAdder && (
-              <CompetitorPicker equips={competitorEquips} brands={brands} excludeIds={competitors} onPick={addCompetitor} />
-            )}
+            ))}
           </div>
+          <button onClick={() => setShowAdder(!showAdder)} disabled={selected.length >= 5}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background text-xs font-bold disabled:opacity-40">
+            <Plus className="h-3.5 w-3.5" /> Adicionar equipamento ({selected.length}/5)
+          </button>
+          {selected.length > 0 && (
+            <button onClick={() => setSelected([])} className="text-xs text-muted-foreground hover:text-destructive">Limpar tudo</button>
+          )}
+        </div>
+      )}
+
+      {showAdder && !presenting && (
+        <div className="mb-6 glass rounded-xl p-4">
+          <Picker pool={pickerPool} brands={brands} excludeIds={selected} onPick={add} />
         </div>
       )}
 
       {all.length === 0 ? (
-        <div className="text-center py-20 text-muted-foreground">Selecione seu equipamento e ao menos 1 concorrente.</div>
-      ) : (
-        <div className={`overflow-x-auto rounded-2xl glass scrollbar-thin ${presenting ? "mx-6 mb-6" : ""}`}>
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr>
-                <th className="sticky left-0 bg-card/95 backdrop-blur z-10 text-left p-4 w-56 border-b border-border"></th>
-                {all.map((e) => {
-                  const b = brands.find((x) => x.id === e.brandId);
-                  const isOwn = b?.isOwn;
-                  return (
-                    <th key={e.id} className={`p-4 min-w-[220px] text-left align-top border-b border-border relative ${isOwn ? "bg-primary/10" : ""}`}>
-                      {isOwn && <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)]" />}
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <span className={`text-[10px] uppercase tracking-widest font-bold ${isOwn ? "text-primary" : "text-muted-foreground"}`}>{b?.name ?? "Sem marca"}</span>
-                        {isOwn && <Star className="h-3 w-3 text-primary fill-current" />}
-                      </div>
-                      {e.imageUrl && (
-                        <div className={`h-24 w-full rounded-lg mb-2 overflow-hidden ${tierMeta[e.tier].gradient}`}>
-                          <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-90" />
-                        </div>
-                      )}
-                      <TierBadge tier={e.tier} />
-                      <div className="font-display font-bold text-base mt-2">{e.name}</div>
-                      <div className="text-xs text-muted-foreground line-clamp-2 mt-1 font-normal">{e.tagline}</div>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              <Row label="Categorias" sticky highlightOwn={all.length > 0 && brands.find((b) => b.id === all[0].brandId)?.isOwn}>
-                {all.map((e) => {
-                  const b = brands.find((x) => x.id === e.brandId);
-                  return (
-                    <td key={e.id} className={`p-4 align-top ${b?.isOwn ? "bg-primary/5" : ""}`}>
-                      <div className="flex flex-wrap gap-1">
-                        {e.categories.map((cid) => { const c = categories.find((x) => x.id === cid); if (!c) return null;
-                          return <span key={cid} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-accent text-muted-foreground"><Icon name={c.icon} className="h-2.5 w-2.5" />{c.name}</span>; })}
-                      </div>
-                    </td>
-                  );
-                })}
-              </Row>
-              <Row label="Diferenciais" sticky>
-                {all.map((e) => {
-                  const b = brands.find((x) => x.id === e.brandId);
-                  return (
-                    <td key={e.id} className={`p-4 align-top ${b?.isOwn ? "bg-primary/5" : ""}`}>
-                      <div className="flex flex-col gap-1">
-                        {e.differentials.map((id) => { const d = differentials.find((x) => x.id === id); if (!d) return null;
-                          return <div key={id} className="inline-flex items-center gap-1.5 text-xs"><Icon name={d.icon} className="h-3 w-3 text-primary" />{d.label}</div>; })}
-                      </div>
-                    </td>
-                  );
-                })}
-              </Row>
-
-              {groups.map((g) => (
-                <GroupBlock key={g} group={g} fields={visibleFields.filter((f) => (f.group || "Geral") === g)} all={all} brands={brands} />
-              ))}
-            </tbody>
-          </table>
+        <div className="text-center py-24 text-muted-foreground border border-dashed border-border rounded-2xl">
+          <Settings2 className="h-8 w-8 mx-auto mb-3 opacity-40" />
+          Adicione equipamentos para começar a comparar.
         </div>
+      ) : (
+        <>
+          {/* Hero cards with image + score */}
+          <div className={`grid gap-4 mb-8 ${all.length === 1 ? "grid-cols-1 max-w-md" : all.length === 2 ? "md:grid-cols-2" : all.length === 3 ? "md:grid-cols-3" : all.length === 4 ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-2 lg:grid-cols-5"}`}>
+            {all.map((e) => {
+              const b = brands.find((x) => x.id === e.brandId);
+              const isOwn = b?.isOwn;
+              const isWinner = scores[e.id] === maxScore && all.length > 1;
+              return (
+                <div key={e.id} className={`relative rounded-2xl overflow-hidden border transition ${isWinner ? "border-tier-premium shadow-glow" : isOwn ? "border-primary/50" : "border-border"} bg-card`}>
+                  {!presenting && (
+                    <button onClick={() => remove(e.id)} className="absolute top-2 right-2 z-10 h-7 w-7 rounded-full bg-background/80 backdrop-blur grid place-items-center text-muted-foreground hover:text-destructive">
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {isWinner && (
+                    <div className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-tier-premium text-background shadow-lg">
+                      <Trophy className="h-3 w-3" /> Vencedor
+                    </div>
+                  )}
+                  <div className={`h-44 relative ${tierMeta[e.tier].gradient}`}>
+                    {e.imageUrl ? (
+                      <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-90" />
+                    ) : (
+                      <div className="absolute inset-0 grid place-items-center text-background/70 font-display text-5xl font-bold opacity-40">{e.shortName || e.name.slice(0, 3)}</div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TierBadge tier={e.tier} />
+                      {isOwn && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-primary"><Star className="h-2.5 w-2.5 fill-current" />Nosso</span>}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">{b?.name ?? "—"}</div>
+                    <h3 className="font-display font-bold text-lg leading-tight">{e.name}</h3>
+                    {e.tagline && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{e.tagline}</p>}
+
+                    {/* Score */}
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <div className="flex items-baseline justify-between mb-1">
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Nota geral</span>
+                        <span className={`font-display text-2xl font-bold ${isWinner ? "text-tier-premium" : isOwn ? "text-primary" : ""}`}>{scores[e.id].toFixed(1)}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-input/40 overflow-hidden">
+                        <div className={`h-full ${isWinner ? "bg-tier-premium" : isOwn ? "bg-primary" : "bg-muted-foreground/40"}`} style={{ width: `${(scores[e.id] / maxScore) * 100}%` }} />
+                      </div>
+                    </div>
+
+                    {/* Advantages */}
+                    {advantages[e.id].length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <div className="flex items-center gap-1 text-[10px] uppercase tracking-widest text-success font-semibold mb-1.5">
+                          <TrendingUp className="h-3 w-3" /> Vantagens ({advantages[e.id].length})
+                        </div>
+                        <ul className="space-y-1 max-h-44 overflow-y-auto scrollbar-thin pr-1">
+                          {advantages[e.id].slice(0, 12).map((a, i) => (
+                            <li key={i} className="flex items-start gap-1.5 text-[11px] leading-snug">
+                              <Check className="h-3 w-3 text-success mt-0.5 shrink-0" />
+                              <span><span className="text-muted-foreground">{a.field.label}:</span> <span className="font-medium">{a.value}</span></span>
+                            </li>
+                          ))}
+                          {advantages[e.id].length > 12 && (
+                            <li className="text-[10px] text-muted-foreground italic">+ {advantages[e.id].length - 12} outras…</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Spec table */}
+          {all.length >= 1 && (
+            <div className="rounded-2xl glass overflow-hidden">
+              <div className="overflow-x-auto scrollbar-thin">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-border bg-card/40">
+                      <th className="sticky left-0 bg-card/95 backdrop-blur z-10 text-left p-3 w-56 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Especificação</th>
+                      {all.map((e) => {
+                        const b = brands.find((x) => x.id === e.brandId);
+                        return (
+                          <th key={e.id} className={`text-left p-3 min-w-[160px] text-xs font-semibold ${b?.isOwn ? "bg-primary/5" : ""}`}>
+                            <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-normal">{b?.name ?? "—"}</div>
+                            {e.shortName || e.name}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groups.map((g) => {
+                      const open = openGroups[g] ?? true;
+                      const groupFields = visibleFields.filter((f) => (f.group || "Geral") === g);
+                      return (
+                        <GroupBlock key={g} group={g} open={open} onToggle={() => toggleGroup(g)} fields={groupFields} all={all} brands={brands} colSpan={all.length + 1} />
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
 }
 
-function GroupBlock({ group, fields, all, brands }: { group: string; fields: SpecField[]; all: Equipment[]; brands: ReturnType<typeof useStore.getState>["brands"] }) {
+function GroupBlock({ group, open, onToggle, fields, all, brands, colSpan }: {
+  group: string; open: boolean; onToggle: () => void; fields: SpecField[]; all: Equipment[];
+  brands: ReturnType<typeof useStore.getState>["brands"]; colSpan: number;
+}) {
   return (
     <>
-      <tr>
-        <td colSpan={all.length + 1} className="px-4 pt-6 pb-2 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold sticky left-0 bg-card/30">{group}</td>
+      <tr className="border-t border-border bg-accent/30">
+        <td colSpan={colSpan} className="px-3 py-2 sticky left-0 bg-accent/30 backdrop-blur">
+          <button onClick={onToggle} className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-foreground/80 hover:text-foreground">
+            {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {group}
+            <span className="text-muted-foreground/60 normal-case font-normal tracking-normal">({fields.length})</span>
+          </button>
+        </td>
       </tr>
-      {fields.map((f) => (
-        <Row key={f.id} label={`${f.label}${f.unit ? ` (${f.unit})` : ""}`}>
-          {all.map((e) => {
-            const b = brands.find((x) => x.id === e.brandId);
-            const v = e.specs[f.key];
-            return (
-              <td key={e.id} className={`p-4 align-top ${b?.isOwn ? "bg-primary/5" : ""}`}>
-                {v === undefined || v === "" ? <span className="text-muted-foreground/50">—</span>
-                  : typeof v === "boolean" ? (v ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-muted-foreground" />)
-                  : <span className={`font-medium ${b?.isOwn ? "text-primary" : ""}`}>{String(v)}</span>}
-              </td>
-            );
-          })}
-        </Row>
-      ))}
+      {open && fields.map((f) => {
+        // determine winners per row
+        const vals = all.map((e) => e.specs[f.key]);
+        let winnerIdxs = new Set<number>();
+        if (f.type === "boolean") {
+          vals.forEach((v, i) => { if (v === true) winnerIdxs.add(i); });
+          if (winnerIdxs.size === all.length) winnerIdxs = new Set();
+        } else if (f.type === "number") {
+          const nums = vals.map((v) => (typeof v === "number" ? v : NaN)).filter((n) => !isNaN(n));
+          if (nums.length > 1 && new Set(nums).size > 1) {
+            const lower = f.key === "weight";
+            const best = lower ? Math.min(...nums) : Math.max(...nums);
+            vals.forEach((v, i) => { if (typeof v === "number" && v === best) winnerIdxs.add(i); });
+          }
+        }
+        return (
+          <tr key={f.id} className="border-t border-border/60 hover:bg-accent/10">
+            <td className="p-3 text-xs text-muted-foreground sticky left-0 bg-card/80 backdrop-blur align-top">
+              {f.label}{f.unit && <span className="text-muted-foreground/60 ml-1">({f.unit})</span>}
+            </td>
+            {all.map((e, i) => {
+              const b = brands.find((x) => x.id === e.brandId);
+              const v = e.specs[f.key];
+              const isWin = winnerIdxs.has(i);
+              return (
+                <td key={e.id} className={`p-3 align-top ${b?.isOwn ? "bg-primary/5" : ""} ${isWin ? "bg-success/10" : ""}`}>
+                  {v === undefined || v === "" ? <span className="text-muted-foreground/40">—</span>
+                    : typeof v === "boolean" ? (v ? <Check className={`h-4 w-4 ${isWin ? "text-success" : "text-success/70"}`} /> : <X className="h-4 w-4 text-muted-foreground/50" />)
+                    : <span className={`text-sm ${isWin ? "font-bold text-success" : "font-medium"}`}>{String(v)}</span>}
+                </td>
+              );
+            })}
+          </tr>
+        );
+      })}
     </>
   );
 }
 
-function Row({ label, sticky, children, highlightOwn: _ }: { label: string; sticky?: boolean; children: React.ReactNode; highlightOwn?: boolean }) {
-  return (
-    <tr className="border-t border-border">
-      <td className={`p-4 text-xs text-muted-foreground font-medium align-top w-56 ${sticky ? "sticky left-0 bg-card/80 backdrop-blur" : ""}`}>{label}</td>
-      {children}
-    </tr>
-  );
-}
-
-function CompetitorPicker({ equips, brands, excludeIds, onPick }: {
-  equips: Equipment[]; brands: ReturnType<typeof useStore.getState>["brands"]; excludeIds: string[]; onPick: (id: string) => void;
+function Picker({ pool, brands, excludeIds, onPick }: {
+  pool: Equipment[]; brands: ReturnType<typeof useStore.getState>["brands"]; excludeIds: string[]; onPick: (id: string) => void;
 }) {
   const [q, setQ] = useState("");
   const [tier, setTier] = useState<Tier | "all">("all");
   const [brandId, setBrandId] = useState<string | "all">("all");
 
   const grouped = useMemo(() => {
-    const filtered = equips.filter((e) =>
+    const filtered = pool.filter((e) =>
       !excludeIds.includes(e.id) &&
       (tier === "all" || e.tier === tier) &&
       (brandId === "all" || e.brandId === brandId) &&
@@ -292,19 +384,21 @@ function CompetitorPicker({ equips, brands, excludeIds, onPick }: {
       map.get(k)!.push(e);
     });
     return map;
-  }, [equips, excludeIds, q, tier, brandId]);
+  }, [pool, excludeIds, q, tier, brandId]);
+
+  const availableBrands = Array.from(new Set(pool.map((e) => e.brandId).filter(Boolean))) as string[];
 
   return (
-    <div className="mt-3 border-t border-border pt-3">
-      <div className="flex gap-2 mb-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar..."
-            className="w-full bg-input/40 border border-border rounded-md pl-7 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40" />
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar modelo..."
+            className="w-full bg-input/40 border border-border rounded-md pl-8 pr-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
         <select value={brandId} onChange={(e) => setBrandId(e.target.value)} className="bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs">
           <option value="all">Todas marcas</option>
-          {brands.filter((b) => !b.isOwn).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {availableBrands.map((id) => { const b = brands.find((x) => x.id === id); return <option key={id} value={id}>{b?.name ?? "—"}</option>; })}
         </select>
         <select value={tier} onChange={(e) => setTier(e.target.value as Tier | "all")} className="bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs">
           <option value="all">Todos tiers</option>
@@ -313,26 +407,29 @@ function CompetitorPicker({ equips, brands, excludeIds, onPick }: {
           <option value="low">Essential</option>
         </select>
       </div>
-      <div className="max-h-64 overflow-y-auto scrollbar-thin space-y-3">
+      <div className="max-h-72 overflow-y-auto scrollbar-thin space-y-3">
         {Array.from(grouped.entries()).map(([bid, eqs]) => {
           const b = brands.find((x) => x.id === bid);
           return (
             <div key={bid}>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-1 px-1">{b?.name ?? "Sem marca"}</div>
-              <div className="grid grid-cols-2 gap-1">
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-1.5 px-1 flex items-center gap-1.5">
+                {b?.isOwn && <Star className="h-2.5 w-2.5 text-primary fill-current" />}
+                {b?.name ?? "Sem marca"}
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                 {eqs.map((e) => (
                   <button key={e.id} onClick={() => onPick(e.id)}
-                    className="flex items-center gap-2 px-2.5 py-2 rounded-md border border-border hover:border-primary hover:bg-primary/10 text-left text-xs">
+                    className="flex items-center gap-2 px-2.5 py-2 rounded-lg border border-border hover:border-primary hover:bg-primary/10 text-left text-xs transition">
                     <TierBadge tier={e.tier} />
                     <span className="font-medium truncate flex-1">{e.name}</span>
-                    <Plus className="h-3 w-3 text-primary" />
+                    <Plus className="h-3 w-3 text-primary shrink-0" />
                   </button>
                 ))}
               </div>
             </div>
           );
         })}
-        {grouped.size === 0 && <div className="text-xs text-muted-foreground py-6 text-center">Nada encontrado.</div>}
+        {grouped.size === 0 && <div className="text-xs text-muted-foreground py-8 text-center">Nada encontrado.</div>}
       </div>
     </div>
   );
