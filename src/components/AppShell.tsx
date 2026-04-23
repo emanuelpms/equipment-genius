@@ -24,16 +24,16 @@ export function AppShell({ scope }: { scope: "admin" | "seller" }) {
   const isActive = (to: string, end?: boolean) => (end ? path === to : path.startsWith(to));
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <aside className="hidden md:flex w-64 flex-col border-r border-border bg-sidebar">
-        <div className="px-5 py-5 border-b border-border">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      <aside className="hidden md:flex w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
+        <div className="px-5 py-5 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-[oklch(0.78_0.2_280)] grid place-items-center shadow-glow">
-              <Package className="h-5 w-5 text-background" />
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[oklch(0.65_0.2_250)] to-[oklch(0.55_0.22_270)] grid place-items-center shadow-glow">
+              <Package className="h-5 w-5 text-white" />
             </div>
             <div>
-              <div className="font-display font-bold text-sm text-foreground leading-none">Catálogo</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">{scope === "admin" ? "Admin" : "Vendas"}</div>
+              <div className="font-display font-bold text-sm leading-none">Samsung Medison</div>
+              <div className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest mt-1">{scope === "admin" ? "Admin · Catálogo" : "Sales Intelligence"}</div>
             </div>
           </Link>
         </div>
@@ -45,7 +45,9 @@ export function AppShell({ scope }: { scope: "admin" | "seller" }) {
                 key={l.to}
                 to={l.to}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
-                  active ? "bg-primary/15 text-foreground shadow-[inset_0_0_0_1px_oklch(0.68_0.18_270/0.3)]" : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                  active
+                    ? "bg-white/10 text-white shadow-[inset_0_0_0_1px_oklch(1_0_0/0.12)]"
+                    : "text-sidebar-foreground/70 hover:text-white hover:bg-white/5"
                 }`}
               >
                 <l.icon className="h-4 w-4" />
@@ -54,25 +56,25 @@ export function AppShell({ scope }: { scope: "admin" | "seller" }) {
             );
           })}
         </nav>
-        <div className="p-3 border-t border-border space-y-1">
+        <div className="p-3 border-t border-sidebar-border space-y-1">
           {scope === "admin" ? (
-            <Link to="/showcase" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/40">
+            <Link to="/showcase" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:text-white hover:bg-white/5">
               <ShoppingBag className="h-4 w-4" /> Ver vitrine
             </Link>
           ) : (
             auth.role === "admin" && (
-              <Link to="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/40">
+              <Link to="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 hover:text-white hover:bg-white/5">
                 <Settings className="h-4 w-4" /> Painel admin
               </Link>
             )
           )}
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
-            <div className="h-8 w-8 rounded-full bg-accent grid place-items-center text-xs font-semibold">{auth.name?.[0]?.toUpperCase() ?? "U"}</div>
+            <div className="h-8 w-8 rounded-full bg-white/10 grid place-items-center text-xs font-semibold">{auth.name?.[0]?.toUpperCase() ?? "U"}</div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium truncate">{auth.name}</div>
-              <div className="text-[10px] text-muted-foreground capitalize">{auth.role}</div>
+              <div className="text-[10px] text-sidebar-foreground/60 capitalize">{auth.role}</div>
             </div>
-            <button onClick={() => { logout(); nav({ to: "/" }); }} className="text-muted-foreground hover:text-destructive p-1.5 rounded-md hover:bg-accent/60">
+            <button onClick={() => { logout(); nav({ to: "/" }); }} className="text-sidebar-foreground/60 hover:text-destructive p-1.5 rounded-md hover:bg-white/5">
               <LogOut className="h-4 w-4" />
             </button>
           </div>
