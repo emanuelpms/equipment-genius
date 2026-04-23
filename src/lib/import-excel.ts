@@ -1,6 +1,17 @@
 import { excelEquipmentData } from './excel_data';
 import { useStore } from './store';
 
+type AnyField = {
+  key: string; label: string; type: string; unit?: string;
+  group?: string; highlight?: boolean; order?: number; options?: string[];
+};
+type AnyEquipment = {
+  name: string; shortName?: string; brandName: string; tier: string;
+  tagline?: string; description?: string; categories: string[];
+  bestFor?: string[]; differentials?: string[];
+  specs: Record<string, any>; highlights?: string[]; releaseYear?: number;
+};
+
 const uid = () => Math.random().toString(36).slice(2, 10);
 
 export const importExcelData = () => {
@@ -61,7 +72,7 @@ export const importExcelData = () => {
   });
 
   // Importar campos
-  excelEquipmentData.fields?.forEach((field) => {
+  (excelEquipmentData.fields as AnyField[] | undefined)?.forEach((field) => {
     const existingField = store.fields.find((f) => f.key === field.key);
     if (!existingField) {
       store.addField({
@@ -78,7 +89,7 @@ export const importExcelData = () => {
   });
 
   // Importar equipamentos
-  excelEquipmentData.equipments.forEach((equipment) => {
+  (excelEquipmentData.equipments as AnyEquipment[]).forEach((equipment) => {
     const existingEquipment = store.equipments.find((e) => e.name === equipment.name);
     if (!existingEquipment) {
       const brandId = brandMap.get(equipment.brandName);
@@ -91,11 +102,11 @@ export const importExcelData = () => {
           tagline: equipment.tagline,
           description: equipment.description,
           categories: equipment.categories.map((c) => categoryMap.get(c)!).filter(Boolean),
-          bestFor: equipment.bestFor,
-          differentials: equipment.differentials
-            .map((d) => differentialMap.get(d)!)
+          bestFor: equipment.bestFor ?? [],
+          differentials: (equipment.differentials ?? [])
+            .map((d: string) => differentialMap.get(d)!)
             .filter(Boolean),
-          specs: equipment.specs,
+          specs: equipment.specs as Record<string, string | number | boolean>,
           highlights: equipment.highlights,
           releaseYear: equipment.releaseYear,
           order: store.equipments.length,
