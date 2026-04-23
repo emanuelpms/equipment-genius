@@ -45,18 +45,26 @@ function Showcase() {
   return (
     <div className="px-8 py-8 max-w-7xl mx-auto">
       {/* Hero */}
-      <div className="rounded-3xl overflow-hidden mb-8 relative" style={{ background: "var(--gradient-hero)" }}>
-        <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "radial-gradient(ellipse at top right, oklch(0.78 0.2 280 / 0.4), transparent 50%)" }} />
-        <div className="relative px-8 py-10 md:py-14">
-          <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest bg-primary/15 text-primary px-3 py-1 rounded-full mb-4">
+      <div className="rounded-3xl overflow-hidden mb-10 relative shadow-soft-lg" style={{ background: "var(--gradient-hero)" }}>
+        <div className="absolute inset-0 grid-pattern opacity-40" />
+        <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full" style={{ background: "radial-gradient(circle, oklch(0.7 0.2 250 / 0.4), transparent 70%)" }} />
+        <div className="absolute -bottom-24 -left-24 h-80 w-80 rounded-full" style={{ background: "radial-gradient(circle, oklch(0.6 0.18 230 / 0.3), transparent 70%)" }} />
+        <div className="relative px-8 md:px-12 py-12 md:py-20">
+          <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] bg-white/10 text-white/90 backdrop-blur px-3 py-1.5 rounded-full mb-5 border border-white/15">
             <Sparkles className="h-3 w-3" /> {ownBrand?.name ?? "Sua marca"} · Competitive Intelligence
           </div>
-          <h1 className="font-display text-4xl md:text-5xl font-bold leading-tight max-w-2xl">
-            Ultrassom <span className="gradient-text">Samsung Medison</span> vs concorrentes.
+          <h1 className="font-display text-4xl md:text-6xl font-bold leading-[1.05] max-w-3xl text-white">
+            Ultrassom <span className="gradient-text-light">Samsung Medison</span><br />vs concorrentes globais.
           </h1>
-          <p className="text-muted-foreground mt-4 max-w-xl">
-            {myEquipments.length} modelos Samsung · {competitorEquips.length} concorrentes (GE, Philips, Siemens) mapeados. Selecione um modelo para iniciar uma comparação técnica lado a lado.
+          <p className="text-white/70 mt-5 max-w-xl text-base md:text-lg leading-relaxed">
+            {myEquipments.length} modelos Samsung · {competitorEquips.length} concorrentes (GE, Philips, Siemens) mapeados.
+            Comparação técnica lado a lado para apresentações profissionais em campo.
           </p>
+          <div className="flex flex-wrap gap-6 mt-8 pt-8 border-t border-white/10">
+            <Stat value={String(myEquipments.length)} label="Modelos Samsung" />
+            <Stat value={String(competitorEquips.length)} label="Concorrentes" />
+            <Stat value={String(categories.length)} label="Especialidades" />
+          </div>
         </div>
       </div>
 
@@ -158,11 +166,20 @@ function Showcase() {
 
 function Chip({ active, onClick, icon, label, count }: { active: boolean; onClick: () => void; icon: string; label: string; count: number }) {
   return (
-    <button onClick={onClick} className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition ${active ? "bg-primary/15 border-primary text-foreground" : "bg-card/60 border-border text-muted-foreground hover:text-foreground"}`}>
+    <button onClick={onClick} className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition ${active ? "bg-primary text-primary-foreground border-primary shadow-soft" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"}`}>
       <Icon name={icon} className="h-3.5 w-3.5" />
       {label}
-      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10">{count}</span>
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-muted"}`}>{count}</span>
     </button>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-3xl md:text-4xl font-bold text-white tabular-nums leading-none">{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.2em] text-white/60 mt-2">{label}</div>
+    </div>
   );
 }
 
@@ -172,10 +189,11 @@ function EquipCard({ e, highlight, onOpen, onCompare, ownBrandId, brands }: {
 }) {
   const isOwn = ownBrandId && e.brandId === ownBrandId;
   const brand = brands.find((b) => b.id === e.brandId);
+  const tm = tierMeta[e.tier] ?? tierMeta.medium;
   return (
     <div className={`group rounded-2xl overflow-hidden glass transition-all hover:-translate-y-0.5 ${highlight || isOwn ? "border-primary/40 shadow-glow" : "hover:border-primary/40"}`}>
       <button onClick={onOpen} className="text-left w-full">
-        <div className={`h-36 relative ${tierMeta[e.tier].gradient}`}>
+        <div className={`h-36 relative ${tm.gradient}`}>
           {e.imageUrl ? (
             <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-90" />
           ) : (
@@ -210,6 +228,7 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
   const { fields, categories, differentials, brands } = useStore();
   const groups = Array.from(new Set(sortByOrder(fields).map((f) => f.group || "Geral")));
   const brand = brands.find((b) => b.id === e.brandId);
+  const tm = tierMeta[e.tier] ?? tierMeta.medium;
   const renderVal = (k: string) => {
     const v = e.specs[k]; if (v === undefined || v === "" || v === null) return <span className="text-muted-foreground">—</span>;
     if (typeof v === "boolean") return v ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-muted-foreground" />;
@@ -219,7 +238,7 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-2xl bg-card border-l border-border overflow-y-auto scrollbar-thin animate-in slide-in-from-right duration-200">
-        <div className={`h-56 relative ${tierMeta[e.tier].gradient}`}>
+        <div className={`h-56 relative ${tm.gradient}`}>
           {e.imageUrl && <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-80" />}
           <button onClick={onClose} className="absolute top-4 right-4 h-9 w-9 rounded-full bg-background/40 backdrop-blur grid place-items-center text-foreground hover:bg-background/60"><X className="h-4 w-4" /></button>
           <div className="absolute bottom-5 left-6 right-6">
