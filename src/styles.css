@@ -30,8 +30,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-tier-premium: var(--tier-premium);
-  --color-tier-medium: var(--tier-medium);
   --color-tier-low: var(--tier-low);
+  --color-tier-mid: var(--tier-mid);
+  --color-tier-high: var(--tier-high);
+  --color-tier-super-premium: var(--tier-super-premium);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-sidebar: var(--sidebar);
@@ -78,17 +80,30 @@
   --input: oklch(0.96 0.006 250);
   --ring: oklch(0.45 0.22 260);
 
-  /* Tier */
-  --tier-premium: oklch(0.55 0.18 270);
-  --tier-medium:  oklch(0.65 0.13 230);
-  --tier-low:     oklch(0.7 0.02 255);
+  /* Tier — exact colors from the original Excel sheet */
+  --tier-low:           oklch(0.72 0.18 55);   /* Low — laranja */
+  --tier-mid:           oklch(0.78 0.12 230);  /* Mid — azul claro */
+  --tier-high:          oklch(0.55 0.18 240);  /* High — azul médio */
+  --tier-premium:       oklch(0.42 0.18 255);  /* Premium — azul escuro */
+  --tier-super-premium: oklch(0.28 0.16 265);  /* Super Premium — azul profundo */
+
+  /* Specialty colors — based on Excel section colors */
+  --spec-radiologia:  oklch(0.85 0.13 90);   /* amarelo claro */
+  --spec-obgyn:       oklch(0.78 0.16 35);   /* laranja claro */
+  --spec-cardiologia: oklch(0.55 0.16 30);   /* marrom-laranja */
+  --spec-urologia:    oklch(0.88 0.16 100);  /* amarelo */
+  --spec-vascular:    oklch(0.7 0.18 150);   /* verde */
+  --spec-pocus:       oklch(0.7 0.16 60);    /* âmbar */
+  --spec-ia:          oklch(0.6 0.2 280);    /* roxo */
 
   /* Gradients */
   --gradient-hero: linear-gradient(135deg, oklch(0.18 0.05 260) 0%, oklch(0.22 0.13 265) 50%, oklch(0.32 0.18 255) 100%);
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-glow) 100%);
-  --gradient-premium: linear-gradient(135deg, oklch(0.45 0.22 270) 0%, oklch(0.55 0.2 250) 100%);
-  --gradient-medium:  linear-gradient(135deg, oklch(0.55 0.16 230) 0%, oklch(0.62 0.14 220) 100%);
-  --gradient-low:     linear-gradient(135deg, oklch(0.55 0.02 255) 0%, oklch(0.45 0.02 255) 100%);
+  --gradient-low:           linear-gradient(135deg, oklch(0.78 0.18 55) 0%, oklch(0.65 0.2 45) 100%);
+  --gradient-mid:           linear-gradient(135deg, oklch(0.82 0.12 230) 0%, oklch(0.68 0.14 230) 100%);
+  --gradient-high:          linear-gradient(135deg, oklch(0.6 0.18 240) 0%, oklch(0.48 0.2 245) 100%);
+  --gradient-premium:       linear-gradient(135deg, oklch(0.45 0.2 255) 0%, oklch(0.32 0.18 260) 100%);
+  --gradient-super-premium: linear-gradient(135deg, oklch(0.32 0.18 265) 0%, oklch(0.18 0.12 270) 100%);
   --gradient-card:    linear-gradient(180deg, oklch(1 0 0) 0%, oklch(0.985 0.005 250) 100%);
 
   /* Shadows — soft, premium */
@@ -155,8 +170,17 @@
     color: transparent;
   }
   .tier-premium-bg { background: var(--gradient-premium); }
-  .tier-medium-bg { background: var(--gradient-medium); }
   .tier-low-bg { background: var(--gradient-low); }
+  .tier-mid-bg { background: var(--gradient-mid); }
+  .tier-high-bg { background: var(--gradient-high); }
+  .tier-super-premium-bg { background: var(--gradient-super-premium); }
+  .spec-radiologia-bg  { background: color-mix(in oklab, var(--spec-radiologia) 18%, transparent); border-color: color-mix(in oklab, var(--spec-radiologia) 45%, transparent); }
+  .spec-obgyn-bg       { background: color-mix(in oklab, var(--spec-obgyn) 18%, transparent); border-color: color-mix(in oklab, var(--spec-obgyn) 45%, transparent); }
+  .spec-cardiologia-bg { background: color-mix(in oklab, var(--spec-cardiologia) 14%, transparent); border-color: color-mix(in oklab, var(--spec-cardiologia) 45%, transparent); }
+  .spec-urologia-bg    { background: color-mix(in oklab, var(--spec-urologia) 18%, transparent); border-color: color-mix(in oklab, var(--spec-urologia) 50%, transparent); }
+  .spec-vascular-bg    { background: color-mix(in oklab, var(--spec-vascular) 16%, transparent); border-color: color-mix(in oklab, var(--spec-vascular) 45%, transparent); }
+  .spec-pocus-bg       { background: color-mix(in oklab, var(--spec-pocus) 18%, transparent); border-color: color-mix(in oklab, var(--spec-pocus) 45%, transparent); }
+  .spec-ia-bg          { background: color-mix(in oklab, var(--spec-ia) 14%, transparent); border-color: color-mix(in oklab, var(--spec-ia) 40%, transparent); }
   .shadow-glow { box-shadow: var(--shadow-glow); }
   .shadow-premium { box-shadow: var(--shadow-premium); }
   .shadow-soft { box-shadow: var(--shadow-md); }

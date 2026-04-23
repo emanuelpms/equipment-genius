@@ -49,7 +49,7 @@ function BrandsAdmin() {
                 const promptName = prompt(`Nome do novo equipamento da ${b.name}:`);
                 if (!promptName?.trim()) return;
                 addEquipment({
-                  name: promptName.trim(), shortName: "", brandId: b.id, tier: "medium",
+                  name: promptName.trim(), shortName: "", brandId: b.id, tier: "mid",
                   tagline: "", description: "", imageUrl: "", photos: [],
                   categories: [], bestFor: [], differentials: [], specs: {}, highlights: [],
                   releaseYear: new Date().getFullYear(),

@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { excelEquipmentData } from './excel_data';
 
-export type Tier = "premium" | "medium" | "low";
+export type Tier = "super-premium" | "premium" | "high" | "mid" | "low";
 export type FieldType = "text" | "number" | "boolean" | "select";
 
 export interface SpecField {
@@ -210,13 +209,14 @@ const seedFields: SpecField[] = [
 ];
 
 const seedCategories: Category[] = [
-  { id: uid(), name: "Cardiologia", icon: "HeartPulse", description: "Exames cardíacos avançados", color: "10", order: 0 },
-  { id: uid(), name: "Ginecologia", icon: "Venus", description: "Saúde da mulher", color: "330", order: 1 },
-  { id: uid(), name: "Obstetrícia", icon: "Baby", description: "Pré-natal e fetal", color: "300", order: 2 },
-  { id: uid(), name: "Radiologia", icon: "ScanLine", description: "Geral / abdômen / partes moles", color: "200", order: 3 },
-  { id: uid(), name: "Vascular", icon: "Activity", description: "Doppler arterial e venoso", color: "150", order: 4 },
-  { id: uid(), name: "POCUS", icon: "Stethoscope", description: "Point-of-care / UTI / emergência", color: "60", order: 5 },
-  { id: uid(), name: "IA Clínica", icon: "Sparkles", description: "Auto-medição assistida por IA", color: "260", order: 6 },
+  // Cores extraídas das faixas da planilha original
+  { id: uid(), name: "Radiologia",  icon: "ScanLine",    description: "Geral / abdômen / partes moles", color: "85",  order: 0 }, // amarelo claro
+  { id: uid(), name: "ObGyn",       icon: "Baby",        description: "Obstetrícia e ginecologia",       color: "30",  order: 1 }, // laranja claro
+  { id: uid(), name: "Cardiologia", icon: "HeartPulse",  description: "Eco e cardiologia avançada",      color: "20",  order: 2 }, // marrom/laranja
+  { id: uid(), name: "Urologia",    icon: "Droplets",    description: "Próstata, bexiga e fusão",         color: "95",  order: 3 }, // amarelo
+  { id: uid(), name: "Vascular",    icon: "Activity",    description: "Doppler arterial e venoso",       color: "150", order: 4 }, // verde
+  { id: uid(), name: "POCUS",       icon: "Stethoscope", description: "Point-of-care / UTI / emergência", color: "60",  order: 5 },
+  { id: uid(), name: "IA Clínica",  icon: "Sparkles",    description: "Auto-medição assistida por IA",   color: "260", order: 6 },
 ];
 
 const seedDiffs: Differential[] = [
@@ -233,9 +233,13 @@ const seedDiffs: Differential[] = [
 
 const seedBrands: Brand[] = [
   { id: uid(), name: "Samsung Medison", isOwn: true, color: "245", order: 0 },
-  { id: uid(), name: "GE Healthcare", color: "200", order: 1 },
-  { id: uid(), name: "Philips", color: "210", order: 2 },
-  { id: uid(), name: "Siemens Healthineers", color: "180", order: 3 },
+  { id: uid(), name: "GE Healthcare",          color: "200", order: 1 },
+  { id: uid(), name: "Philips",                color: "230", order: 2 },
+  { id: uid(), name: "Canon Medical",          color: "30",  order: 3 },
+  { id: uid(), name: "Siemens Healthineers",   color: "180", order: 4 },
+  { id: uid(), name: "Mindray",                color: "10",  order: 5 },
+  { id: uid(), name: "Fujifilm (SonoSite)",    color: "120", order: 6 },
+  { id: uid(), name: "Vinno",                  color: "60",  order: 7 },
 ];
 
 const seedEquipments = (
@@ -248,14 +252,72 @@ const seedEquipments = (
   const d = (n: string) => diffs.find((x) => x.label === n)!.id;
   const b = (n: string) => brands.find((x) => x.name === n)!.id;
   const now = Date.now();
+  const empty = (
+    name: string, brand: string, tier: Tier, cats: string[], order: number
+  ): Equipment => ({
+    id: uid(), name, shortName: name, brandId: b(brand), tier,
+    tagline: "", description: "",
+    categories: cats, bestFor: [], differentials: [], specs: {}, highlights: [],
+    order, createdAt: now,
+  });
   return [
-    // ─── Samsung Medison (own) ─────────────────────────
+    // ─────────────────────────────────────────────────────────
+    // SAMSUNG MEDISON — linha completa real (own brand)
+    // ─────────────────────────────────────────────────────────
+
+    // ── Super Premium ──
+    {
+      id: uid(), name: "RS85 Prestige", shortName: "RS85", brandId: b("Samsung Medison"), tier: "super-premium",
+      tagline: "Flagship Samsung — Crystal Architecture™ + IA completa",
+      description: "Plataforma Super Premium da Samsung Medison. Crystal Architecture, S-Vue Transducers e IA assistida em todas as especialidades. Para grandes hospitais de referência.",
+      categories: [c("Cardiologia"), c("ObGyn"), c("Radiologia"), c("Vascular"), c("Urologia"), c("IA Clínica")],
+      bestFor: [c("Cardiologia"), c("Radiologia"), c("IA Clínica")],
+      differentials: [d("Crystal Architecture™"), d("S-Vue™ Transducers"), d("BiometryAssist™ (IA)"), d("HeartAssist™"), d("5D Heart Color™"), d("Licença perpétua")],
+      specs: {
+        price: "R$ 720k–950k", channels: 256, os: "Linux Embedded", wifi: true,
+        monitorType: "LED IPS 4K", monitorSize: 23.8, touch: true, storage: "2 TB SSD",
+        activePorts: 4, usbPorts: 6, weight: 130, dimensions: "151 x 60 x 95 cm",
+        heightAdjust: true, artArm: true, gelWarmer: true, pedal: true, keyboard: "Híbrido", battery: false, probeHolders: 5,
+        radAutoMeas: true, radAI: true, swConvex: true, swLinear: true, ceus: true, singleCrystal: true, maxFreq: 22,
+        obAutoMeas: true, vol3d4d: true, fovEndo: true, tumorEndo: true, tumorOV: true,
+        strainLV: true, strainLARV: true, tee3d: true, tte3d: true, echoStress: true, efAuto: true,
+        bladderAuto: true, prostateFusion: true,
+        pConvex: true, pMicro: true, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: true, pHockey: true,
+        pEndoVol: true, pSecAdult: true, pSecPed: true, pSecNeo: true, pTEEAdult: true, pTEEPed: true,
+      },
+      highlights: ["Crystal Architecture™", "S-Vue 256e", "IA Clínica"],
+      releaseYear: 2024, order: 0, createdAt: now,
+    },
+    {
+      id: uid(), name: "HERA W10 Elite", shortName: "W10 Elite", brandId: b("Samsung Medison"), tier: "super-premium",
+      tagline: "Topo absoluto em ginecologia, obstetrícia e medicina fetal 5D",
+      description: "Plataforma Super Premium dedicada à saúde da mulher. ScanNav™, 5D NT/CNS, BiometryAssist™ e suíte fetal completa.",
+      categories: [c("ObGyn"), c("IA Clínica"), c("Radiologia")],
+      bestFor: [c("ObGyn"), c("IA Clínica")],
+      differentials: [d("Crystal Architecture™"), d("BiometryAssist™ (IA)"), d("S-Vue™ Transducers"), d("Workflow rápido"), d("Licença perpétua")],
+      specs: {
+        price: "R$ 680k–820k", channels: 192, os: "Linux Embedded", wifi: true,
+        monitorType: "LED IPS 4K", monitorSize: 23.8, touch: true, storage: "2 TB SSD",
+        activePorts: 4, usbPorts: 6, weight: 132, dimensions: "150 x 60 x 90 cm",
+        heightAdjust: true, artArm: true, gelWarmer: true, pedal: true, keyboard: "Híbrido", battery: false, probeHolders: 5,
+        radAutoMeas: true, radAI: true, swConvex: true, swLinear: true, ceus: true, singleCrystal: true, maxFreq: 22,
+        obAutoMeas: true, vol3d4d: true, fovEndo: true, tumorEndo: true, tumorOV: true,
+        strainLV: false, strainLARV: false, tee3d: false, tte3d: true, echoStress: false, efAuto: true,
+        bladderAuto: true, prostateFusion: false,
+        pConvex: true, pMicro: true, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: true, pHockey: true,
+        pEndoVol: true, pSecAdult: false, pSecPed: false, pSecNeo: false, pTEEAdult: false, pTEEPed: false,
+      },
+      highlights: ["5D NT/CNS", "BiometryAssist™", "ScanNav™ Assist"],
+      releaseYear: 2024, order: 1, createdAt: now,
+    },
+
+    // ── Premium ──
     {
       id: uid(), name: "HS50A", shortName: "HS50A", brandId: b("Samsung Medison"), tier: "premium",
-      tagline: "Flagship Samsung — IA Crystal Signature+ 3ª geração",
-      description: "Plataforma premium da linha Samsung. Melhor custo-benefício para hospitais de grande porte com IA assistida em todas as especialidades.",
-      categories: [c("Cardiologia"), c("Ginecologia"), c("Obstetrícia"), c("Radiologia"), c("Vascular"), c("IA Clínica")],
-      bestFor: [c("Cardiologia"), c("Radiologia"), c("IA Clínica")],
+      tagline: "Premium versátil — Crystal Signature+ 3ª geração",
+      description: "Plataforma premium da linha Samsung. Excelente custo-benefício para hospitais de grande porte com IA assistida em todas as especialidades.",
+      categories: [c("Cardiologia"), c("ObGyn"), c("Radiologia"), c("Vascular"), c("IA Clínica")],
+      bestFor: [c("Cardiologia"), c("Radiologia")],
       differentials: [d("Crystal Architecture™"), d("S-Vue™ Transducers"), d("BiometryAssist™ (IA)"), d("HeartAssist™"), d("Licença perpétua")],
       specs: {
         price: "R$ 480k–620k", channels: 135, os: "Linux Embedded", wifi: true,
@@ -270,14 +332,14 @@ const seedEquipments = (
         pEndoVol: true, pSecAdult: true, pSecPed: true, pSecNeo: true, pTEEAdult: true, pTEEPed: true,
       },
       highlights: ["Crystal Signature+", "Auto-medição IA", "5D Heart Color"],
-      releaseYear: 2024, order: 0, createdAt: now,
+      releaseYear: 2024, order: 2, createdAt: now,
     },
     {
       id: uid(), name: "HERA W10", shortName: "W10", brandId: b("Samsung Medison"), tier: "premium",
-      tagline: "Topo de linha em ginecologia e obstetrícia 5D",
-      description: "Plataforma dedicada à saúde da mulher com tecnologia 5D NT, IA BiometryAssist e workflow otimizado para clínicas e hospitais.",
-      categories: [c("Ginecologia"), c("Obstetrícia"), c("IA Clínica"), c("Radiologia")],
-      bestFor: [c("Ginecologia"), c("Obstetrícia")],
+      tagline: "Premium em ginecologia e obstetrícia 5D",
+      description: "Plataforma premium dedicada à saúde da mulher com tecnologia 5D NT, IA BiometryAssist e workflow otimizado.",
+      categories: [c("ObGyn"), c("IA Clínica"), c("Radiologia")],
+      bestFor: [c("ObGyn")],
       differentials: [d("Crystal Architecture™"), d("BiometryAssist™ (IA)"), d("S-Vue™ Transducers"), d("Workflow rápido")],
       specs: {
         price: "R$ 580k–720k", channels: 192, os: "Linux Embedded", wifi: true,
@@ -292,10 +354,80 @@ const seedEquipments = (
         pEndoVol: true, pSecAdult: false, pSecPed: false, pSecNeo: false, pTEEAdult: false, pTEEPed: false,
       },
       highlights: ["5D NT", "BiometryAssist™", "ScanNav™"],
-      releaseYear: 2024, order: 1, createdAt: now,
+      releaseYear: 2024, order: 3, createdAt: now,
+    },
+
+    // ── High ──
+    {
+      id: uid(), name: "V8", shortName: "V8", brandId: b("Samsung Medison"), tier: "high",
+      tagline: "High-end versátil — Crystal Architecture e MV-Flow™",
+      description: "High-end da Samsung com Crystal Architecture e S-Vue. Multiuso para clínicas e hospitais de médio porte.",
+      categories: [c("Radiologia"), c("ObGyn"), c("Cardiologia"), c("Vascular"), c("IA Clínica")],
+      bestFor: [c("Radiologia"), c("Vascular")],
+      differentials: [d("Crystal Architecture™"), d("S-Vue™ Transducers"), d("BiometryAssist™ (IA)"), d("Conectividade DICOM"), d("Licença perpétua")],
+      specs: {
+        price: "R$ 380k–460k", channels: 128, os: "Linux Embedded", wifi: true,
+        monitorType: "LED IPS Full HD", monitorSize: 23.8, touch: true, storage: "1 TB SSD",
+        activePorts: 4, usbPorts: 6, weight: 120, dimensions: "150 x 60 x 88 cm",
+        heightAdjust: true, artArm: true, gelWarmer: true, pedal: true, keyboard: "Físico", battery: false, probeHolders: 5,
+        radAutoMeas: true, radAI: true, swConvex: true, swLinear: true, ceus: true, singleCrystal: false, maxFreq: 18,
+        obAutoMeas: true, vol3d4d: true, fovEndo: true, tumorEndo: false, tumorOV: false,
+        strainLV: true, strainLARV: false, tee3d: false, tte3d: true, echoStress: true, efAuto: true,
+        bladderAuto: true, prostateFusion: false,
+        pConvex: true, pMicro: true, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: false, pHockey: true,
+        pEndoVol: true, pSecAdult: true, pSecPed: true, pSecNeo: true, pTEEAdult: false, pTEEPed: false,
+      },
+      highlights: ["Crystal Architecture", "S-Vue", "MV-Flow™"],
+      releaseYear: 2023, order: 4, createdAt: now,
     },
     {
-      id: uid(), name: "HM70 EVO", shortName: "HM70", brandId: b("Samsung Medison"), tier: "medium",
+      id: uid(), name: "V7", shortName: "V7", brandId: b("Samsung Medison"), tier: "high",
+      tagline: "High-end OBGYN com NerveTrack™ e ElastoScan",
+      description: "Plataforma High-end com forte apelo em obstetrícia e ginecologia. Boa relação custo-benefício.",
+      categories: [c("ObGyn"), c("Radiologia"), c("Vascular")],
+      bestFor: [c("ObGyn")],
+      differentials: [d("S-Vue™ Transducers"), d("BiometryAssist™ (IA)"), d("Conectividade DICOM"), d("Licença perpétua")],
+      specs: {
+        price: "R$ 300k–380k", channels: 128, os: "Linux Embedded", wifi: true,
+        monitorType: "LED IPS Full HD", monitorSize: 21.5, touch: true, storage: "1 TB SSD",
+        activePorts: 4, usbPorts: 4, weight: 110, dimensions: "148 x 58 x 85 cm",
+        heightAdjust: true, artArm: true, gelWarmer: true, pedal: true, keyboard: "Físico", battery: false, probeHolders: 4,
+        radAutoMeas: true, radAI: true, swConvex: true, swLinear: false, ceus: false, singleCrystal: false, maxFreq: 16,
+        obAutoMeas: true, vol3d4d: true, fovEndo: false, tumorEndo: false, tumorOV: false,
+        strainLV: true, strainLARV: false, tee3d: false, tte3d: false, echoStress: false, efAuto: true,
+        bladderAuto: true, prostateFusion: false,
+        pConvex: true, pMicro: true, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: false, pHockey: true,
+        pEndoVol: true, pSecAdult: true, pSecPed: false, pSecNeo: false, pTEEAdult: false, pTEEPed: false,
+      },
+      highlights: ["NerveTrack™", "ElastoScan™", "S-Detect™"],
+      releaseYear: 2023, order: 5, createdAt: now,
+    },
+
+    // ── Mid ──
+    {
+      id: uid(), name: "HS40", shortName: "HS40", brandId: b("Samsung Medison"), tier: "mid",
+      tagline: "Mid-range robusto para clínicas multiprofissionais",
+      description: "Mid-range Samsung com plataforma compartilhada da linha premium. Excelente para clínicas e hospitais de médio porte.",
+      categories: [c("Radiologia"), c("ObGyn"), c("Vascular")],
+      bestFor: [c("Radiologia")],
+      differentials: [d("S-Vue™ Transducers"), d("Conectividade DICOM"), d("Licença perpétua")],
+      specs: {
+        price: "R$ 220k–290k", channels: 96, os: "Linux Embedded", wifi: true,
+        monitorType: "LED Full HD", monitorSize: 21.5, touch: true, storage: "500 GB SSD",
+        activePorts: 4, usbPorts: 4, weight: 95, dimensions: "146 x 56 x 82 cm",
+        heightAdjust: true, artArm: true, gelWarmer: false, pedal: true, keyboard: "Físico", battery: false, probeHolders: 4,
+        radAutoMeas: true, radAI: false, swConvex: false, swLinear: false, ceus: false, singleCrystal: false, maxFreq: 14,
+        obAutoMeas: true, vol3d4d: true, fovEndo: false, tumorEndo: false, tumorOV: false,
+        strainLV: false, strainLARV: false, tee3d: false, tte3d: false, echoStress: false, efAuto: true,
+        bladderAuto: true, prostateFusion: false,
+        pConvex: true, pMicro: true, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: false, pHockey: false,
+        pEndoVol: false, pSecAdult: true, pSecPed: true, pSecNeo: false, pTEEAdult: false, pTEEPed: false,
+      },
+      highlights: ["S-Vue", "Workflow Samsung"],
+      releaseYear: 2022, order: 6, createdAt: now,
+    },
+    {
+      id: uid(), name: "HM70 EVO", shortName: "HM70", brandId: b("Samsung Medison"), tier: "mid",
       tagline: "Portátil com bateria — UTI, emergência e POCUS",
       description: "Compacto e leve com bateria integrada, ideal para point-of-care, ambulância, UTI e emergência. EzExam+ AI para protocolos rápidos.",
       categories: [c("POCUS"), c("Vascular"), c("Radiologia"), c("IA Clínica")],
@@ -314,99 +446,74 @@ const seedEquipments = (
         pEndoVol: false, pSecAdult: true, pSecPed: true, pSecNeo: true, pTEEAdult: false, pTEEPed: false,
       },
       highlights: ["3.5 kg", "Bateria 90 min", "EzExam+ AI"],
-      releaseYear: 2023, order: 2, createdAt: now,
+      releaseYear: 2023, order: 7, createdAt: now,
     },
-    // ─── GE Healthcare ─────────────────────────────────
+
+    // ── Low ──
     {
-      id: uid(), name: "Logiq E10", shortName: "E10", brandId: b("GE Healthcare"), tier: "premium",
-      tagline: "Topo de linha GE com arquitetura cSound",
-      description: "Plataforma premium GE com forte presença em cardiologia. Subscription anual de software, sem licença perpétua.",
-      categories: [c("Cardiologia"), c("Vascular"), c("Radiologia")],
-      bestFor: [c("Cardiologia")],
-      differentials: [d("Workflow rápido"), d("Conectividade DICOM")],
-      specs: {
-        price: "R$ 520k–680k", channels: 128, os: "Windows 10 Embedded", wifi: false,
-        monitorType: "LED Full HD", monitorSize: 23, touch: true, storage: "1 TB HDD",
-        activePorts: 4, usbPorts: 4, weight: 72, dimensions: "150 x 60 x 92 cm",
-        heightAdjust: true, artArm: true, gelWarmer: false, pedal: true, keyboard: "Físico", battery: false, probeHolders: 4,
-        radAutoMeas: true, radAI: true, swConvex: true, swLinear: false, ceus: false, singleCrystal: false, maxFreq: 15,
-        obAutoMeas: true, vol3d4d: true, fovEndo: false, tumorEndo: false, tumorOV: false,
-        strainLV: true, strainLARV: false, tee3d: true, tte3d: true, echoStress: true, efAuto: true,
-        bladderAuto: false, prostateFusion: true,
-        pConvex: true, pMicro: false, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: false, pHockey: false,
-        pEndoVol: false, pSecAdult: true, pSecPed: true, pSecNeo: false, pTEEAdult: true, pTEEPed: false,
-      },
-      highlights: ["cSound", "Cardio Suite"],
-      releaseYear: 2023, order: 3, createdAt: now,
-    },
-    // ─── Philips ───────────────────────────────────────
-    {
-      id: uid(), name: "EPIQ Elite", shortName: "EPIQ", brandId: b("Philips"), tier: "premium",
-      tagline: "Foco em alta resolução, ginecologia e cardio pediátrica",
-      description: "Plataforma Philips com nSIGHT Imaging. Sem suporte 24/7 e sem IA assistida no fluxo padrão.",
-      categories: [c("Ginecologia"), c("Cardiologia"), c("Radiologia")],
-      bestFor: [c("Ginecologia")],
-      differentials: [d("Conectividade DICOM")],
-      specs: {
-        price: "R$ 600k–780k", channels: 128, os: "Windows 10", wifi: false,
-        monitorType: "LED FHD", monitorSize: 21.5, touch: false, storage: "1 TB HDD",
-        activePorts: 4, usbPorts: 4, weight: 70, dimensions: "147 x 58 x 88 cm",
-        heightAdjust: true, artArm: true, gelWarmer: false, pedal: true, keyboard: "Físico", battery: false, probeHolders: 4,
-        radAutoMeas: true, radAI: false, swConvex: true, swLinear: true, ceus: true, singleCrystal: true, maxFreq: 18,
-        obAutoMeas: true, vol3d4d: false, fovEndo: false, tumorEndo: false, tumorOV: false,
-        strainLV: true, strainLARV: true, tee3d: true, tte3d: true, echoStress: true, efAuto: true,
-        bladderAuto: false, prostateFusion: false,
-        pConvex: true, pMicro: false, pConvexVol: false, pLinear: true, pTV: true, pBiplanar: false, pHockey: false,
-        pEndoVol: false, pSecAdult: true, pSecPed: true, pSecNeo: true, pTEEAdult: true, pTEEPed: true,
-      },
-      highlights: ["nSIGHT Imaging"],
-      releaseYear: 2022, order: 4, createdAt: now,
-    },
-    {
-      id: uid(), name: "Affiniti 70", shortName: "A70", brandId: b("Philips"), tier: "medium",
-      tagline: "Plataforma intermediária com foco em custo-benefício hospitalar",
-      description: "Linha intermediária Philips com PureWave crystal, voltada a hospitais de médio porte.",
-      categories: [c("Cardiologia"), c("Obstetrícia"), c("Radiologia")],
+      id: uid(), name: "HS30", shortName: "HS30", brandId: b("Samsung Medison"), tier: "low",
+      tagline: "Entry-level Samsung — UBM e clínicas de menor porte",
+      description: "Sistema entry da Samsung com qualidade de imagem confiável e workflow simples. Ótimo para começar com a marca.",
+      categories: [c("Radiologia"), c("ObGyn")],
       bestFor: [],
-      differentials: [d("Conectividade DICOM")],
+      differentials: [d("Conectividade DICOM"), d("Licença perpétua")],
       specs: {
-        price: "R$ 380k–460k", channels: 128, os: "Windows 10", wifi: false,
-        monitorType: "LED FHD", monitorSize: 21.5, touch: false, storage: "500 GB HDD",
-        activePorts: 3, usbPorts: 3, weight: 68, dimensions: "145 x 56 x 86 cm",
-        heightAdjust: true, artArm: false, gelWarmer: false, pedal: true, keyboard: "Físico", battery: false, probeHolders: 4,
-        radAutoMeas: true, radAI: false, swConvex: false, swLinear: false, ceus: false, singleCrystal: false, maxFreq: 12,
+        price: "R$ 110k–150k", channels: 64, os: "Linux Embedded", wifi: false,
+        monitorType: "LED FHD", monitorSize: 19.5, touch: false, storage: "320 GB HDD",
+        activePorts: 3, usbPorts: 3, weight: 75, dimensions: "140 x 54 x 80 cm",
+        heightAdjust: true, artArm: false, gelWarmer: false, pedal: true, keyboard: "Físico", battery: false, probeHolders: 3,
+        radAutoMeas: false, radAI: false, swConvex: false, swLinear: false, ceus: false, singleCrystal: false, maxFreq: 10,
         obAutoMeas: true, vol3d4d: false, fovEndo: false, tumorEndo: false, tumorOV: false,
-        strainLV: true, strainLARV: false, tee3d: false, tte3d: false, echoStress: false, efAuto: true,
-        bladderAuto: false, prostateFusion: false,
+        strainLV: false, strainLARV: false, tee3d: false, tte3d: false, echoStress: false, efAuto: false,
+        bladderAuto: true, prostateFusion: false,
         pConvex: true, pMicro: false, pConvexVol: false, pLinear: true, pTV: true, pBiplanar: false, pHockey: false,
         pEndoVol: false, pSecAdult: true, pSecPed: false, pSecNeo: false, pTEEAdult: false, pTEEPed: false,
       },
-      highlights: ["PureWave"],
-      releaseYear: 2022, order: 5, createdAt: now,
+      highlights: ["Entry-level", "DICOM completo"],
+      releaseYear: 2021, order: 8, createdAt: now,
     },
-    // ─── Siemens Healthineers ──────────────────────────
-    {
-      id: uid(), name: "Sequoia", shortName: "SEQ", brandId: b("Siemens Healthineers"), tier: "premium",
-      tagline: "BioAcoustic Imaging com forte presença hospitalar",
-      description: "Alta tecnologia Siemens com BioAcoustic, ampla profundidade e cobertura de Radiologia, Vascular e Cardio.",
-      categories: [c("Radiologia"), c("Vascular"), c("Cardiologia")],
-      bestFor: [c("Radiologia"), c("Vascular")],
-      differentials: [d("Conectividade DICOM"), d("Workflow rápido")],
-      specs: {
-        price: "R$ 700k–900k", channels: 192, os: "Linux Embedded", wifi: true,
-        monitorType: "LED 4K", monitorSize: 24, touch: true, storage: "2 TB SSD",
-        activePorts: 4, usbPorts: 6, weight: 80, dimensions: "152 x 62 x 95 cm",
-        heightAdjust: true, artArm: true, gelWarmer: false, pedal: true, keyboard: "Físico", battery: false, probeHolders: 5,
-        radAutoMeas: true, radAI: false, swConvex: true, swLinear: true, ceus: true, singleCrystal: true, maxFreq: 22,
-        obAutoMeas: true, vol3d4d: true, fovEndo: true, tumorEndo: false, tumorOV: false,
-        strainLV: true, strainLARV: true, tee3d: true, tte3d: true, echoStress: true, efAuto: true,
-        bladderAuto: false, prostateFusion: true,
-        pConvex: true, pMicro: false, pConvexVol: true, pLinear: true, pTV: true, pBiplanar: true, pHockey: false,
-        pEndoVol: false, pSecAdult: true, pSecPed: true, pSecNeo: false, pTEEAdult: true, pTEEPed: true,
-      },
-      highlights: ["BioAcoustic", "4K monitor", "192 canais"],
-      releaseYear: 2023, order: 6, createdAt: now,
-    },
+
+    // ─────────────────────────────────────────────────────────
+    // CONCORRENTES — estrutura vazia para o admin preencher
+    // ─────────────────────────────────────────────────────────
+    // GE Healthcare
+    empty("Logiq E10",          "GE Healthcare", "super-premium", [c("Cardiologia"), c("Radiologia"), c("Vascular")], 100),
+    empty("Vivid E95",          "GE Healthcare", "super-premium", [c("Cardiologia")], 101),
+    empty("Voluson E10",        "GE Healthcare", "super-premium", [c("ObGyn")], 102),
+    empty("Logiq E9",           "GE Healthcare", "premium",       [c("Radiologia"), c("Cardiologia")], 103),
+    empty("Voluson E8",         "GE Healthcare", "premium",       [c("ObGyn")], 104),
+    empty("Logiq Fortis",       "GE Healthcare", "high",          [c("Radiologia"), c("Cardiologia")], 105),
+    empty("Versana Premier",    "GE Healthcare", "mid",           [c("Radiologia")], 106),
+    empty("Versana Essential",  "GE Healthcare", "low",           [c("Radiologia")], 107),
+    // Philips
+    empty("EPIQ Elite",         "Philips", "super-premium", [c("Cardiologia"), c("Radiologia")], 200),
+    empty("EPIQ CVx",           "Philips", "super-premium", [c("Cardiologia")], 201),
+    empty("Affiniti 70",        "Philips", "high",          [c("Radiologia"), c("ObGyn")], 202),
+    empty("Affiniti 50",        "Philips", "mid",           [c("Radiologia")], 203),
+    empty("Affiniti 30",        "Philips", "low",           [c("Radiologia")], 204),
+    // Canon Medical
+    empty("Aplio i900",         "Canon Medical", "super-premium", [c("Radiologia"), c("Cardiologia")], 300),
+    empty("Aplio i800",         "Canon Medical", "premium",       [c("Radiologia")], 301),
+    empty("Aplio a550",         "Canon Medical", "high",          [c("Radiologia")], 302),
+    empty("Aplio Flex",         "Canon Medical", "mid",           [c("Radiologia")], 303),
+    empty("Xario 200",          "Canon Medical", "low",           [c("Radiologia")], 304),
+    // Siemens Healthineers
+    empty("Sequoia",            "Siemens Healthineers", "super-premium", [c("Radiologia"), c("Cardiologia")], 400),
+    empty("Acuson Redwood",     "Siemens Healthineers", "premium",       [c("Radiologia")], 401),
+    empty("Acuson Juniper",     "Siemens Healthineers", "high",          [c("Radiologia")], 402),
+    empty("Acuson Maple",       "Siemens Healthineers", "low",           [c("Radiologia")], 403),
+    // Mindray
+    empty("Resona R9",          "Mindray", "super-premium", [c("Radiologia"), c("Cardiologia")], 500),
+    empty("Resona I9",          "Mindray", "premium",       [c("Radiologia")], 501),
+    empty("Nuewa R9",           "Mindray", "high",          [c("Radiologia")], 502),
+    empty("Consona N7",         "Mindray", "low",           [c("Radiologia")], 503),
+    // Vinno
+    empty("Vinno E20",          "Vinno", "premium", [c("Radiologia")], 600),
+    empty("Vinno E35",          "Vinno", "high",    [c("Radiologia")], 601),
+    empty("Vinno X1",           "Vinno", "low",     [c("Radiologia")], 602),
+    // Fujifilm
+    empty("Arietta 850",        "Fujifilm (SonoSite)", "premium", [c("Radiologia")], 700),
+    empty("Arietta 65",         "Fujifilm (SonoSite)", "low",     [c("Radiologia")], 701),
   ];
 };
 
@@ -545,12 +652,17 @@ export const useStore = create<AppState>()(
         savedComparisons: [],
       }),
     }),
-    { name: "samsung-medison-catalog-v3" }
+    { name: "samsung-medison-catalog-v4" }
   )
 );
 
 export const tierMeta: Record<Tier, { label: string; gradient: string; ring: string; text: string }> = {
-  premium: { label: "Premium", gradient: "tier-premium-bg", ring: "ring-tier-premium/40", text: "text-tier-premium" },
-  medium:  { label: "Medium",  gradient: "tier-medium-bg",  ring: "ring-tier-medium/40",  text: "text-tier-medium"  },
-  low:     { label: "Essential", gradient: "tier-low-bg",   ring: "ring-tier-low/40",     text: "text-tier-low"     },
+  "super-premium": { label: "Super Premium", gradient: "tier-super-premium-bg", ring: "ring-tier-super-premium/40", text: "text-tier-super-premium" },
+  premium:         { label: "Premium",       gradient: "tier-premium-bg",       ring: "ring-tier-premium/40",       text: "text-tier-premium" },
+  high:            { label: "High",          gradient: "tier-high-bg",          ring: "ring-tier-high/40",          text: "text-tier-high" },
+  mid:             { label: "Mid",           gradient: "tier-mid-bg",           ring: "ring-tier-mid/40",           text: "text-tier-mid" },
+  low:             { label: "Low",           gradient: "tier-low-bg",           ring: "ring-tier-low/40",           text: "text-tier-low" },
 };
+
+// Ordem visual: super-premium > premium > high > mid > low
+export const tierOrder: Tier[] = ["super-premium", "premium", "high", "mid", "low"];
