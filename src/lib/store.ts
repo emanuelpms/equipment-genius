@@ -209,13 +209,14 @@ const seedFields: SpecField[] = [
 ];
 
 const seedCategories: Category[] = [
-  { id: uid(), name: "Cardiologia", icon: "HeartPulse", description: "Exames cardíacos avançados", color: "10", order: 0 },
-  { id: uid(), name: "Ginecologia", icon: "Venus", description: "Saúde da mulher", color: "330", order: 1 },
-  { id: uid(), name: "Obstetrícia", icon: "Baby", description: "Pré-natal e fetal", color: "300", order: 2 },
-  { id: uid(), name: "Radiologia", icon: "ScanLine", description: "Geral / abdômen / partes moles", color: "200", order: 3 },
-  { id: uid(), name: "Vascular", icon: "Activity", description: "Doppler arterial e venoso", color: "150", order: 4 },
-  { id: uid(), name: "POCUS", icon: "Stethoscope", description: "Point-of-care / UTI / emergência", color: "60", order: 5 },
-  { id: uid(), name: "IA Clínica", icon: "Sparkles", description: "Auto-medição assistida por IA", color: "260", order: 6 },
+  // Cores extraídas das faixas da planilha original
+  { id: uid(), name: "Radiologia",  icon: "ScanLine",    description: "Geral / abdômen / partes moles", color: "85",  order: 0 }, // amarelo claro
+  { id: uid(), name: "ObGyn",       icon: "Baby",        description: "Obstetrícia e ginecologia",       color: "30",  order: 1 }, // laranja claro
+  { id: uid(), name: "Cardiologia", icon: "HeartPulse",  description: "Eco e cardiologia avançada",      color: "20",  order: 2 }, // marrom/laranja
+  { id: uid(), name: "Urologia",    icon: "Droplets",    description: "Próstata, bexiga e fusão",         color: "95",  order: 3 }, // amarelo
+  { id: uid(), name: "Vascular",    icon: "Activity",    description: "Doppler arterial e venoso",       color: "150", order: 4 }, // verde
+  { id: uid(), name: "POCUS",       icon: "Stethoscope", description: "Point-of-care / UTI / emergência", color: "60",  order: 5 },
+  { id: uid(), name: "IA Clínica",  icon: "Sparkles",    description: "Auto-medição assistida por IA",   color: "260", order: 6 },
 ];
 
 const seedDiffs: Differential[] = [
@@ -549,7 +550,12 @@ export const useStore = create<AppState>()(
 );
 
 export const tierMeta: Record<Tier, { label: string; gradient: string; ring: string; text: string }> = {
-  premium: { label: "Premium", gradient: "tier-premium-bg", ring: "ring-tier-premium/40", text: "text-tier-premium" },
-  medium:  { label: "Medium",  gradient: "tier-medium-bg",  ring: "ring-tier-medium/40",  text: "text-tier-medium"  },
-  low:     { label: "Essential", gradient: "tier-low-bg",   ring: "ring-tier-low/40",     text: "text-tier-low"     },
+  "super-premium": { label: "Super Premium", gradient: "tier-super-premium-bg", ring: "ring-tier-super-premium/40", text: "text-tier-super-premium" },
+  premium:         { label: "Premium",       gradient: "tier-premium-bg",       ring: "ring-tier-premium/40",       text: "text-tier-premium" },
+  high:            { label: "High",          gradient: "tier-high-bg",          ring: "ring-tier-high/40",          text: "text-tier-high" },
+  mid:             { label: "Mid",           gradient: "tier-mid-bg",           ring: "ring-tier-mid/40",           text: "text-tier-mid" },
+  low:             { label: "Low",           gradient: "tier-low-bg",           ring: "ring-tier-low/40",           text: "text-tier-low" },
 };
+
+// Ordem visual: super-premium > premium > high > mid > low
+export const tierOrder: Tier[] = ["super-premium", "premium", "high", "mid", "low"];
