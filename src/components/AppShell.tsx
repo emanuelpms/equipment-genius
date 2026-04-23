@@ -25,7 +25,7 @@ export function AppShell({ scope }: { scope: "admin" | "seller" }) {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <aside className="hidden md:flex w-64 flex-col text-white border-r border-white/10 bg-[oklch(0.16_0.04_260)]">
+      <aside className="hidden md:flex w-64 flex-col text-white border-r border-white/10 bg-[#0b1224]">
         <div className="px-5 py-5 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2.5">
             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-[oklch(0.65_0.2_250)] to-[oklch(0.55_0.22_270)] grid place-items-center shadow-glow">
