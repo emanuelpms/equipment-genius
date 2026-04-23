@@ -295,7 +295,7 @@ const seedEquipments = (
       releaseYear: 2024, order: 1, createdAt: now,
     },
     {
-      id: uid(), name: "HM70 EVO", shortName: "HM70", brandId: b("Samsung Medison"), tier: "medium",
+      id: uid(), name: "HM70 EVO", shortName: "HM70", brandId: b("Samsung Medison"), tier: "mid",
       tagline: "Portátil com bateria — UTI, emergência e POCUS",
       description: "Compacto e leve com bateria integrada, ideal para point-of-care, ambulância, UTI e emergência. EzExam+ AI para protocolos rápidos.",
       categories: [c("POCUS"), c("Vascular"), c("Radiologia"), c("IA Clínica")],
@@ -363,7 +363,7 @@ const seedEquipments = (
       releaseYear: 2022, order: 4, createdAt: now,
     },
     {
-      id: uid(), name: "Affiniti 70", shortName: "A70", brandId: b("Philips"), tier: "medium",
+      id: uid(), name: "Affiniti 70", shortName: "A70", brandId: b("Philips"), tier: "mid",
       tagline: "Plataforma intermediária com foco em custo-benefício hospitalar",
       description: "Linha intermediária Philips com PureWave crystal, voltada a hospitais de médio porte.",
       categories: [c("Cardiologia"), c("Obstetrícia"), c("Radiologia")],
