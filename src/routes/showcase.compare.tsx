@@ -97,7 +97,7 @@ function Compare() {
 
   const remove = (id: string) => setSelected((s) => s.filter((x) => x !== id));
   const add = (id: string) => {
-    if (selected.length >= 5) { alert("Máximo 5 equipamentos para boa visualização."); return; }
+    if (selected.length >= 20) { alert("Máximo 20 equipamentos por comparação."); return; }
     if (!selected.includes(id)) setSelected([...selected, id]);
     setShowAdder(false);
   };
@@ -187,9 +187,9 @@ function Compare() {
               </button>
             ))}
           </div>
-          <button onClick={() => setShowAdder(!showAdder)} disabled={selected.length >= 5}
+          <button onClick={() => setShowAdder(!showAdder)} disabled={selected.length >= 20}
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background text-xs font-bold disabled:opacity-40">
-            <Plus className="h-3.5 w-3.5" /> Adicionar equipamento ({selected.length}/5)
+            <Plus className="h-3.5 w-3.5" /> Adicionar ({selected.length}/20)
           </button>
           {selected.length > 0 && (
             <button onClick={() => setSelected([])} className="text-xs text-muted-foreground hover:text-destructive">Limpar tudo</button>
