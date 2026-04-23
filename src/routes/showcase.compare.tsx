@@ -19,19 +19,20 @@ function sortByOrder<T extends { order?: number }>(arr: T[]): T[] {
 // ────────────────────────────────────────────────────────────
 // Scoring: every visible field contributes
 //   boolean true = +1, numeric > others = +1, text non-empty = +0.25
+// Final score is normalized to 0-10 scale
 // Returns score per equipment id and per-equip list of advantages
 // ────────────────────────────────────────────────────────────
 function computeScores(equips: Equipment[], fields: SpecField[]) {
-  const scores: Record<string, number> = {};
+  const rawScores: Record<string, number> = {};
   const advantages: Record<string, { field: SpecField; value: string }[]> = {};
-  equips.forEach((e) => { scores[e.id] = 0; advantages[e.id] = []; });
+  equips.forEach((e) => { rawScores[e.id] = 0; advantages[e.id] = []; });
 
   fields.forEach((f) => {
     const values = equips.map((e) => e.specs[f.key]);
     if (f.type === "boolean") {
       equips.forEach((e, i) => {
         if (values[i] === true) {
-          scores[e.id] += 1;
+          rawScores[e.id] += 1;
           if (values.filter((v) => v === true).length < equips.length) {
             advantages[e.id].push({ field: f, value: "Sim" });
           }
@@ -46,16 +47,24 @@ function computeScores(equips: Equipment[], fields: SpecField[]) {
       const best = lowerIsBetter ? Math.min(...valid) : Math.max(...valid);
       equips.forEach((e, i) => {
         if (!isNaN(nums[i]) && nums[i] === best && valid.length > 1 && new Set(valid).size > 1) {
-          scores[e.id] += 1;
+          rawScores[e.id] += 1;
           advantages[e.id].push({ field: f, value: `${nums[i]}${f.unit ? " " + f.unit : ""}${lowerIsBetter ? " (mais leve)" : " (maior)"}` });
         }
       });
     } else {
       equips.forEach((e, i) => {
-        if (values[i] !== undefined && values[i] !== "") scores[e.id] += 0.25;
+        if (values[i] !== undefined && values[i] !== "") rawScores[e.id] += 0.25;
       });
     }
   });
+
+  // Normalize scores to 0-10 scale
+  const maxRaw = Math.max(1, ...Object.values(rawScores));
+  const scores: Record<string, number> = {};
+  equips.forEach((e) => {
+    scores[e.id] = Math.min(10, parseFloat(((rawScores[e.id] / maxRaw) * 10).toFixed(1)));
+  });
+
   return { scores, advantages };
 }
 
@@ -84,7 +93,7 @@ function Compare() {
   const visibleFields = sortByOrder(fields);
   const groups = Array.from(new Set(visibleFields.map((f) => f.group || "Geral")));
   const { scores, advantages } = useMemo(() => computeScores(all, visibleFields), [all, visibleFields]);
-  const maxScore = Math.max(1, ...Object.values(scores));
+  const maxScore = 10; // Fixed 0-10 scale
 
   const remove = (id: string) => setSelected((s) => s.filter((x) => x !== id));
   const add = (id: string) => {
@@ -239,7 +248,10 @@ function Compare() {
                     <div className="mt-3 pt-3 border-t border-border">
                       <div className="flex items-baseline justify-between mb-1">
                         <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Nota geral</span>
-                        <span className={`font-display text-2xl font-bold ${isWinner ? "text-tier-premium" : isOwn ? "text-primary" : ""}`}>{scores[e.id].toFixed(1)}</span>
+                        <span className={`font-display text-2xl font-bold ${isWinner ? "text-tier-premium" : isOwn ? "text-primary" : ""}`}>
+                          {scores[e.id].toFixed(1)}
+                          <span className="text-sm font-normal text-muted-foreground">/10</span>
+                        </span>
                       </div>
                       <div className="h-1.5 rounded-full bg-input/40 overflow-hidden">
                         <div className={`h-full ${isWinner ? "bg-tier-premium" : isOwn ? "bg-primary" : "bg-muted-foreground/40"}`} style={{ width: `${(scores[e.id] / maxScore) * 100}%` }} />
