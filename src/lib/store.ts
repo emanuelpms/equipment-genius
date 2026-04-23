@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { excelEquipmentData } from './excel_data';
 
 export type Tier = "premium" | "medium" | "low";
 export type FieldType = "text" | "number" | "boolean" | "select";
