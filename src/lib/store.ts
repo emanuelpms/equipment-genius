@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { excelEquipmentData } from './excel_data';
 
-export type Tier = "premium" | "medium" | "low";
+export type Tier = "super-premium" | "premium" | "high" | "mid" | "low";
 export type FieldType = "text" | "number" | "boolean" | "select";
 
 export interface SpecField {
