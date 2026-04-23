@@ -75,7 +75,7 @@ function Showcase() {
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar modelo..." className="w-full bg-card/60 border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
         <div className="flex gap-1 bg-card/60 border border-border rounded-lg p-1">
-          {(["all", "premium", "medium", "low"] as const).map((t) => (
+          {(["all", "super-premium", "premium", "high", "mid", "low"] as const).map((t) => (
             <button key={t} onClick={() => setTier(t)} className={`px-3 py-1.5 text-xs font-semibold rounded-md ${tier === t ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>
               {t === "all" ? "Todos tiers" : tierMeta[t].label}
             </button>

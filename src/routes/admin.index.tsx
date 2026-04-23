@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useStore, tierMeta } from "@/lib/store";
+import { useStore, tierMeta, tierOrder } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
 import { Package, Sliders, Tags, Sparkles, ArrowUpRight, Plus, Building2, Star } from "lucide-react";
 
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/admin/")({ component: AdminDashboard });
 function AdminDashboard() {
   const { equipments, fields, categories, differentials, brands } = useStore();
   const ownBrand = brands.find((b) => b.isOwn);
-  const counts = (["premium", "medium", "low"] as const).map((t) => ({
+  const counts = tierOrder.map((t) => ({
     tier: t, n: equipments.filter((e) => e.tier === t).length,
   }));
 

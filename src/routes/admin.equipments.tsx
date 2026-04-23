@@ -19,7 +19,7 @@ import { SortableItem } from "@/components/SortableItem";
 export const Route = createFileRoute("/admin/equipments")({ component: EquipmentsAdmin });
 
 const emptyEq = (brandId?: string): Omit<Equipment, "id" | "createdAt"> => ({
-  name: "Novo equipamento", shortName: "", brandId, tier: "medium", tagline: "", description: "", imageUrl: "",
+  name: "Novo equipamento", shortName: "", brandId, tier: "mid", tagline: "", description: "", imageUrl: "",
   photos: [], categories: [], bestFor: [], differentials: [], specs: {}, highlights: [], releaseYear: new Date().getFullYear(),
 });
 
@@ -104,7 +104,7 @@ function EquipmentsAdmin() {
             className="w-full bg-input/40 border border-border rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
         </div>
         <div className="flex gap-1 bg-card/60 border border-border rounded-lg p-1">
-          {(["all", "premium", "medium", "low"] as const).map((t) => (
+          {(["all", "super-premium", "premium", "high", "mid", "low"] as const).map((t) => (
             <button key={t} onClick={() => setTierFilter(t)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${tierFilter === t ? "bg-primary text-background" : "text-muted-foreground hover:text-foreground"}`}>
               {t === "all" ? "Todos tiers" : tierMeta[t].label}
@@ -454,7 +454,7 @@ function QuickAddRow({ colSpan, brands, defaultBrandId, onAdd }: {
 }) {
   const [name, setName] = useState("");
   const [brandId, setBrandId] = useState<string | undefined>(defaultBrandId);
-  const [tier, setTier] = useState<Tier>("medium");
+  const [tier, setTier] = useState<Tier>("mid");
   const submit = () => {
     if (!name.trim()) return;
     onAdd({ name: name.trim(), brandId, tier });
