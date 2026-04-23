@@ -172,10 +172,11 @@ function EquipCard({ e, highlight, onOpen, onCompare, ownBrandId, brands }: {
 }) {
   const isOwn = ownBrandId && e.brandId === ownBrandId;
   const brand = brands.find((b) => b.id === e.brandId);
+  const tm = tierMeta[e.tier] ?? tierMeta.medium;
   return (
     <div className={`group rounded-2xl overflow-hidden glass transition-all hover:-translate-y-0.5 ${highlight || isOwn ? "border-primary/40 shadow-glow" : "hover:border-primary/40"}`}>
       <button onClick={onOpen} className="text-left w-full">
-        <div className={`h-36 relative ${tierMeta[e.tier].gradient}`}>
+        <div className={`h-36 relative ${tm.gradient}`}>
           {e.imageUrl ? (
             <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-90" />
           ) : (
@@ -210,6 +211,7 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
   const { fields, categories, differentials, brands } = useStore();
   const groups = Array.from(new Set(sortByOrder(fields).map((f) => f.group || "Geral")));
   const brand = brands.find((b) => b.id === e.brandId);
+  const tm = tierMeta[e.tier] ?? tierMeta.medium;
   const renderVal = (k: string) => {
     const v = e.specs[k]; if (v === undefined || v === "" || v === null) return <span className="text-muted-foreground">—</span>;
     if (typeof v === "boolean") return v ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-muted-foreground" />;
@@ -219,7 +221,7 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
     <div className="fixed inset-0 z-50 flex">
       <div className="flex-1 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-2xl bg-card border-l border-border overflow-y-auto scrollbar-thin animate-in slide-in-from-right duration-200">
-        <div className={`h-56 relative ${tierMeta[e.tier].gradient}`}>
+        <div className={`h-56 relative ${tm.gradient}`}>
           {e.imageUrl && <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-80" />}
           <button onClick={onClose} className="absolute top-4 right-4 h-9 w-9 rounded-full bg-background/40 backdrop-blur grid place-items-center text-foreground hover:bg-background/60"><X className="h-4 w-4" /></button>
           <div className="absolute bottom-5 left-6 right-6">
