@@ -166,11 +166,20 @@ function Showcase() {
 
 function Chip({ active, onClick, icon, label, count }: { active: boolean; onClick: () => void; icon: string; label: string; count: number }) {
   return (
-    <button onClick={onClick} className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition ${active ? "bg-primary/15 border-primary text-foreground" : "bg-card/60 border-border text-muted-foreground hover:text-foreground"}`}>
+    <button onClick={onClick} className={`shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border transition ${active ? "bg-primary text-primary-foreground border-primary shadow-soft" : "bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/40"}`}>
       <Icon name={icon} className="h-3.5 w-3.5" />
       {label}
-      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-foreground/10">{count}</span>
+      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-muted"}`}>{count}</span>
     </button>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div>
+      <div className="font-display text-3xl md:text-4xl font-bold text-white tabular-nums leading-none">{value}</div>
+      <div className="text-[10px] uppercase tracking-[0.2em] text-white/60 mt-2">{label}</div>
+    </div>
   );
 }
 
