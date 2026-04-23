@@ -233,9 +233,13 @@ const seedDiffs: Differential[] = [
 
 const seedBrands: Brand[] = [
   { id: uid(), name: "Samsung Medison", isOwn: true, color: "245", order: 0 },
-  { id: uid(), name: "GE Healthcare", color: "200", order: 1 },
-  { id: uid(), name: "Philips", color: "210", order: 2 },
-  { id: uid(), name: "Siemens Healthineers", color: "180", order: 3 },
+  { id: uid(), name: "GE Healthcare",          color: "200", order: 1 },
+  { id: uid(), name: "Philips",                color: "230", order: 2 },
+  { id: uid(), name: "Canon Medical",          color: "30",  order: 3 },
+  { id: uid(), name: "Siemens Healthineers",   color: "180", order: 4 },
+  { id: uid(), name: "Mindray",                color: "10",  order: 5 },
+  { id: uid(), name: "Fujifilm (SonoSite)",    color: "120", order: 6 },
+  { id: uid(), name: "Vinno",                  color: "60",  order: 7 },
 ];
 
 const seedEquipments = (
