@@ -189,7 +189,7 @@ function EquipCard({ e, highlight, onOpen, onCompare, ownBrandId, brands }: {
 }) {
   const isOwn = ownBrandId && e.brandId === ownBrandId;
   const brand = brands.find((b) => b.id === e.brandId);
-  const tm = tierMeta[e.tier] ?? tierMeta.medium;
+  const tm = tierMeta[e.tier] ?? tierMeta.mid;
   return (
     <div className={`group rounded-2xl overflow-hidden glass transition-all hover:-translate-y-0.5 ${highlight || isOwn ? "border-primary/40 shadow-glow" : "hover:border-primary/40"}`}>
       <button onClick={onOpen} className="text-left w-full">
@@ -228,7 +228,7 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
   const { fields, categories, differentials, brands } = useStore();
   const groups = Array.from(new Set(sortByOrder(fields).map((f) => f.group || "Geral")));
   const brand = brands.find((b) => b.id === e.brandId);
-  const tm = tierMeta[e.tier] ?? tierMeta.medium;
+  const tm = tierMeta[e.tier] ?? tierMeta.mid;
   const renderVal = (k: string) => {
     const v = e.specs[k]; if (v === undefined || v === "" || v === null) return <span className="text-muted-foreground">—</span>;
     if (typeof v === "boolean") return v ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-muted-foreground" />;
