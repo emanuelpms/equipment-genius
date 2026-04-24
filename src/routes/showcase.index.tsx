@@ -1,6 +1,6 @@
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useStore, tierMeta, type Tier, type Equipment } from "@/lib/store";
+import { useStore, tierMeta, type Tier, type Equipment, type SpecField } from "@/lib/store";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
 import { Search, Sparkles, ChevronRight, Check, X, Star, Building2, Swords, Save, Edit3, ExternalLink } from "lucide-react";
@@ -340,4 +340,24 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
       </div>
     </div>
   );
+}
+
+function InlineSpecInput({ field, value, onChange }: { field: SpecField; value: string | number | boolean | undefined; onChange: (v: string | number | boolean | undefined) => void }) {
+  const cls = "w-36 bg-input/50 border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40";
+  if (field.type === "boolean") {
+    return <button type="button" onClick={() => onChange(value === true ? false : value === false ? undefined : true)} className={`w-24 rounded-md border px-2 py-1 text-xs font-semibold ${value === true ? "bg-success/15 border-success/40 text-success" : value === false ? "bg-destructive/10 border-destructive/30 text-destructive" : "bg-input/40 border-border text-muted-foreground"}`}>{value === true ? "Sim" : value === false ? "Não" : "—"}</button>;
+  }
+  if (field.type === "select") {
+    return <select value={String(value ?? "")} onChange={(ev) => onChange(ev.target.value || undefined)} className={cls}><option value="">—</option>{field.options?.map((o) => <option key={o} value={o}>{o}</option>)}</select>;
+  }
+  return <input type={field.type === "number" ? "number" : "text"} value={value === undefined ? "" : String(value)} onChange={(ev) => onChange(field.type === "number" ? (ev.target.value === "" ? undefined : +ev.target.value) : (ev.target.value || undefined))} className={cls} />;
+}
+
+function groupClass(group: string) {
+  const g = group.toLowerCase();
+  if (g.includes("radiologia")) return "spec-radiologia-bg";
+  if (g.includes("obgyn")) return "spec-obgyn-bg";
+  if (g.includes("cardio")) return "spec-cardiologia-bg";
+  if (g.includes("uro")) return "spec-urologia-bg";
+  return "bg-card/60";
 }
