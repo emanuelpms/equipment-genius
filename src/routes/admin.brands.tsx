@@ -1,125 +1,30 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useStore, type Brand } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
-import { Plus, Trash2, Star, Image as ImageIcon, X, Building2, PackagePlus } from "lucide-react";
+import { Building2, Globe, Image as ImageIcon, PackagePlus, Plus, Star, Trash2, X } from "lucide-react";
 import { PhotoPicker } from "@/components/PhotoPicker";
+import { TierBadge } from "@/components/TierBadge";
+import { useStore, type Brand, type Tier } from "@/lib/store";
 
 export const Route = createFileRoute("/admin/brands")({ component: BrandsAdmin });
 
 function BrandsAdmin() {
   const { brands, addBrand, updateBrand, removeBrand, setOwnBrand, equipments, addEquipment } = useStore();
   const nav = useNavigate();
-  const [name, setName] = useState("");
-
-  const submit = () => {
-    if (!name.trim()) return;
-    addBrand({ name: name.trim() });
-    setName("");
-  };
-
-  const sorted = [...brands].sort((a, b) => Number(b.isOwn) - Number(a.isOwn));
-
-  return (
-    <div className="px-8 py-8 max-w-5xl">
-      <PageHeader
-        title="Marcas"
-        subtitle="Cadastre sua marca e as marcas concorrentes. Marque uma como 'Minha Empresa' — ela ficará destacada em toda a plataforma."
-      />
-
-      <div className="glass rounded-xl p-5 mb-6">
-        <div className="text-sm font-semibold mb-3">Adicionar marca</div>
-        <div className="flex gap-2">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Philips, GE, Samsung..."
-            onKeyDown={(e) => e.key === "Enter" && submit()}
-            className="flex-1 bg-input/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40" />
-          <button onClick={submit} className="px-4 py-2 rounded-lg bg-primary text-background text-sm font-semibold inline-flex items-center gap-1.5">
-            <Plus className="h-4 w-4" />Adicionar
-          </button>
-        </div>
-      </div>
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {sorted.map((b) => {
-          const count = equipments.filter((e) => e.brandId === b.id).length;
-          return (
-            <BrandCard key={b.id} b={b} count={count} onUpdate={(p) => updateBrand(b.id, p)}
-              onSetOwn={() => setOwnBrand(b.id)}
-              onAddModel={() => {
-                const promptName = prompt(`Nome do novo equipamento da ${b.name}:`);
-                if (!promptName?.trim()) return;
-                addEquipment({
-                  name: promptName.trim(), shortName: "", brandId: b.id, tier: "mid",
-                  tagline: "", description: "", imageUrl: "", photos: [],
-                  categories: [], bestFor: [], differentials: [], specs: {}, highlights: [],
-                  releaseYear: new Date().getFullYear(),
-                });
-                nav({ to: "/admin/equipments" });
-              }}
-              onDelete={() => confirm(`Remover marca "${b.name}"? Os equipamentos ficarão sem marca.`) && removeBrand(b.id)} />
-          );
-        })}
-      </div>
-    </div>
-  );
+  const [draft, setDraft] = useState({ name: "", websiteUrl: "", description: "" });
+  const [modelFor, setModelFor] = useState<Brand | null>(null);
+  const submit = () => { if (!draft.name.trim()) return; addBrand({ ...draft, name: draft.name.trim(), order: brands.length }); setDraft({ name: "", websiteUrl: "", description: "" }); };
+  const sorted = [...brands].sort((a, b) => Number(b.isOwn) - Number(a.isOwn) || (a.order ?? 999) - (b.order ?? 999));
+  return <div className="px-8 py-8 max-w-7xl"><div className="mb-8"><div className="text-[10px] uppercase tracking-widest text-primary font-bold mb-1">Fabricantes</div><h1 className="font-display text-3xl font-bold">Marcas</h1><p className="text-sm text-muted-foreground mt-1">Cadastre fabricantes com site, logo, descrição e crie modelos completos por marca.</p></div>
+    <section className="glass rounded-2xl p-5 mb-8"><div className="font-display font-bold mb-4 flex items-center gap-2"><Plus className="h-4 w-4" />Adicionar marca</div><div className="grid lg:grid-cols-[1fr_1fr_2fr_140px] gap-3"><input value={draft.name} onChange={(e)=>setDraft({...draft,name:e.target.value})} placeholder="Nome da marca" className={ic}/><input value={draft.websiteUrl} onChange={(e)=>setDraft({...draft,websiteUrl:e.target.value})} placeholder="Site oficial" className={ic}/><input value={draft.description} onChange={(e)=>setDraft({...draft,description:e.target.value})} placeholder="Descrição" className={ic}/><button onClick={submit} className="rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Adicionar</button></div></section>
+    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5">{sorted.map((b)=>{const count=equipments.filter((e)=>e.brandId===b.id).length; return <BrandCard key={b.id} b={b} count={count} onUpdate={(p)=>updateBrand(b.id,p)} onSetOwn={()=>setOwnBrand(b.id)} onAddModel={()=>setModelFor(b)} onDelete={()=>confirm(`Remover ${b.name}? Os equipamentos ficarão sem marca.`)&&removeBrand(b.id)} />})}</div>
+    {modelFor && <NewModelDrawer brand={modelFor} onClose={()=>setModelFor(null)} onCreate={(payload)=>{const id=addEquipment(payload); setModelFor(null); nav({to:"/admin/equipments"}); setTimeout(()=>{},0);}} />}
+  </div>;
 }
 
-function BrandCard({ b, count, onUpdate, onSetOwn, onAddModel, onDelete }: {
-  b: Brand; count: number;
-  onUpdate: (p: Partial<Brand>) => void;
-  onSetOwn: () => void;
-  onAddModel: () => void;
-  onDelete: () => void;
-}) {
-  const [editingLogo, setEditingLogo] = useState(false);
-  return (
-    <div className={`glass rounded-2xl p-5 transition relative ${b.isOwn ? "border-primary/60 shadow-glow" : ""}`}>
-      {b.isOwn && (
-        <div className="absolute -top-2 left-4 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-gradient-to-r from-primary to-[oklch(0.78_0.2_280)] text-background">
-          <Star className="h-2.5 w-2.5 fill-current" /> Minha Empresa
-        </div>
-      )}
-      <div className="flex items-start gap-3 mb-4">
-        <button onClick={() => setEditingLogo(true)} className="h-14 w-14 shrink-0 rounded-xl bg-accent/40 grid place-items-center overflow-hidden hover:bg-accent transition relative group">
-          {b.logoUrl ? (
-            <img src={b.logoUrl} alt={b.name} className="h-full w-full object-cover" />
-          ) : (
-            <Building2 className="h-6 w-6 text-muted-foreground" />
-          )}
-          <div className="absolute inset-0 bg-background/70 opacity-0 group-hover:opacity-100 transition grid place-items-center">
-            <ImageIcon className="h-4 w-4" />
-          </div>
-        </button>
-        <div className="flex-1 min-w-0">
-          <input value={b.name} onChange={(e) => onUpdate({ name: e.target.value })}
-            className="w-full bg-transparent font-display font-bold text-base focus:outline-none focus:bg-input/40 rounded px-1 -mx-1" />
-          <div className="text-xs text-muted-foreground mt-0.5">{count} equipamento{count !== 1 ? "s" : ""}</div>
-        </div>
-        <button onClick={onDelete} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/15"><Trash2 className="h-4 w-4" /></button>
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <button onClick={onAddModel} className="w-full text-xs px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 hover:bg-primary/20 text-primary transition font-semibold inline-flex items-center justify-center gap-1.5">
-          <PackagePlus className="h-3.5 w-3.5" /> Novo modelo desta marca
-        </button>
-        {!b.isOwn && (
-          <button onClick={onSetOwn} className="w-full text-xs px-3 py-2 rounded-lg border border-border hover:border-primary hover:bg-primary/10 hover:text-primary transition font-medium">
-            Marcar como minha empresa
-          </button>
-        )}
-      </div>
-
-      {editingLogo && (
-        <div className="fixed inset-0 z-50 grid place-items-center p-4 bg-background/80 backdrop-blur-sm" onClick={() => setEditingLogo(false)}>
-          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <div className="font-display font-bold">Logo da marca</div>
-              <button onClick={() => setEditingLogo(false)} className="p-1.5 rounded-md hover:bg-accent"><X className="h-4 w-4" /></button>
-            </div>
-            <PhotoPicker value={b.logoUrl} onChange={(v) => onUpdate({ logoUrl: v })} />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+function BrandCard({ b, count, onUpdate, onSetOwn, onAddModel, onDelete }: { b: Brand; count: number; onUpdate: (p: Partial<Brand>) => void; onSetOwn: () => void; onAddModel: () => void; onDelete: () => void }) {
+  const [logoOpen, setLogoOpen] = useState(false);
+  return <article className={`rounded-2xl border bg-card p-5 shadow-soft transition ${b.isOwn ? "border-primary shadow-glow" : "border-border"}`}>{b.isOwn && <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-full bg-primary/10 text-primary mb-3"><Star className="h-3 w-3 fill-current" />Minha Empresa</div>}<div className="flex items-start gap-3"><button onClick={()=>setLogoOpen(true)} className="h-16 w-16 rounded-xl bg-muted grid place-items-center overflow-hidden relative group shrink-0">{b.logoUrl ? <img src={b.logoUrl} alt={b.name} className="h-full w-full object-cover"/> : <Building2 className="h-7 w-7 text-muted-foreground"/>}<span className="absolute inset-0 bg-card/80 opacity-0 group-hover:opacity-100 grid place-items-center"><ImageIcon className="h-4 w-4"/></span></button><div className="flex-1 min-w-0 space-y-2"><input value={b.name} onChange={(e)=>onUpdate({name:e.target.value})} className="w-full bg-transparent font-display font-bold text-lg focus:outline-none focus:bg-input/40 rounded px-1 -mx-1"/><input value={b.websiteUrl ?? ""} onChange={(e)=>onUpdate({websiteUrl:e.target.value})} placeholder="https://..." className={ic}/></div><button onClick={onDelete} className="h-8 w-8 rounded-lg grid place-items-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4"/></button></div><textarea value={b.description ?? ""} onChange={(e)=>onUpdate({description:e.target.value})} placeholder="Resumo da marca" rows={3} className={`${ic} mt-3`}/><div className="flex items-center justify-between mt-4 text-xs text-muted-foreground"><span>{count} equipamento{count!==1?"s":""}</span>{b.websiteUrl && <a href={b.websiteUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 hover:text-primary"><Globe className="h-3 w-3"/>Site</a>}</div><div className="grid grid-cols-2 gap-2 mt-4"><button onClick={onAddModel} className="rounded-lg bg-primary text-primary-foreground px-3 py-2 text-xs font-semibold inline-flex items-center justify-center gap-1.5"><PackagePlus className="h-3.5 w-3.5"/>Novo modelo</button>{!b.isOwn && <button onClick={onSetOwn} className="rounded-lg border border-border px-3 py-2 text-xs font-semibold hover:bg-accent">Minha empresa</button>}</div>{logoOpen && <div className="fixed inset-0 z-50 grid place-items-center bg-background/80 backdrop-blur-sm p-4" onClick={()=>setLogoOpen(false)}><div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full" onClick={(e)=>e.stopPropagation()}><div className="flex items-center justify-between mb-4"><h3 className="font-display font-bold">Logo da marca</h3><button onClick={()=>setLogoOpen(false)} className="p-1.5 rounded-lg hover:bg-accent"><X className="h-4 w-4"/></button></div><PhotoPicker value={b.logoUrl} onChange={(v)=>onUpdate({logoUrl:v})}/></div></div>}</article>;
 }
+function NewModelDrawer({ brand, onClose, onCreate }: { brand: Brand; onClose: () => void; onCreate: (payload: any) => void }) { const [form,setForm]=useState({name:"",shortName:"",tier:"mid" as Tier,tagline:"",description:"",releaseYear:new Date().getFullYear(),imageUrl:""}); const submit=()=>{if(!form.name.trim())return; onCreate({...form, brandId:brand.id, photos:[], categories:[], bestFor:[], differentials:[], specs:{}, highlights:[]});}; return <div className="fixed inset-0 z-50 flex"><div className="flex-1 bg-background/70 backdrop-blur-sm" onClick={onClose}/><aside className="w-full max-w-lg bg-card border-l border-border overflow-y-auto"><div className="sticky top-0 bg-card/95 border-b border-border p-5 flex items-center justify-between"><div><div className="text-xs text-muted-foreground">Novo modelo</div><h2 className="font-display font-bold text-xl">{brand.name}</h2></div><button onClick={onClose} className="p-2 rounded-lg hover:bg-accent"><X className="h-4 w-4"/></button></div><div className="p-5 space-y-4"><Field label="Nome do modelo"><input value={form.name} onChange={(e)=>setForm({...form,name:e.target.value})} className={ic}/></Field><div className="grid grid-cols-2 gap-3"><Field label="Sigla"><input value={form.shortName} onChange={(e)=>setForm({...form,shortName:e.target.value})} className={ic}/></Field><Field label="Tier"><select value={form.tier} onChange={(e)=>setForm({...form,tier:e.target.value as Tier})} className={ic}><option value="super-premium">Super Premium</option><option value="premium">Premium</option><option value="high">High</option><option value="mid">Mid</option><option value="low">Low</option></select></Field></div><Field label="Tagline"><input value={form.tagline} onChange={(e)=>setForm({...form,tagline:e.target.value})} className={ic}/></Field><Field label="Descrição"><textarea value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} rows={4} className={ic}/></Field><Field label="Foto principal"><PhotoPicker value={form.imageUrl} onChange={(v)=>setForm({...form,imageUrl:v??""})}/></Field><div><TierBadge tier={form.tier}/></div><button onClick={submit} className="w-full rounded-lg bg-primary text-primary-foreground py-2.5 font-semibold">Criar modelo e editar specs</button></div></aside></div>}
+function Field({label,children}:{label:string;children:React.ReactNode}){return <label className="block"><span className="block text-[11px] font-semibold text-muted-foreground mb-1.5">{label}</span>{children}</label>}
+const ic="w-full bg-input/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";

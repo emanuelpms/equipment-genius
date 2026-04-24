@@ -37,6 +37,9 @@ export interface Brand {
   name: string;
   isOwn?: boolean;     // true = "minha empresa"
   logoUrl?: string;    // url or base64
+  websiteUrl?: string;
+  description?: string;
+  country?: string;
   color?: string;      // accent
   order?: number;
 }

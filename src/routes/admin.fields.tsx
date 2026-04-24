@@ -1,96 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { useStore, type SpecField, type FieldType } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
-import { Plus, Trash2, Star } from "lucide-react";
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
-import { arrayMove, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { SortableItem } from "@/components/SortableItem";
+import { useMemo, useState } from "react";
+import { Check, GripVertical, Plus, Star, Trash2 } from "lucide-react";
+import { useStore, type FieldType, type SpecField } from "@/lib/store";
 
 export const Route = createFileRoute("/admin/fields")({ component: FieldsAdmin });
+const groupsPreset = ["Hardware", "Radiologia", "ObGyn", "Cardiologia", "Urologia", "Transdutores"];
 
 function FieldsAdmin() {
-  const { fields, addField, updateField, removeField, reorderFields } = useStore();
-  const [draft, setDraft] = useState({ label: "", key: "", type: "text" as FieldType, unit: "", group: "Geral", options: "" });
-
-  const submit = () => {
-    if (!draft.label.trim()) return;
-    const key = draft.key.trim() || draft.label.toLowerCase().replace(/[^a-z0-9]+/g, "_");
-    addField({
-      label: draft.label.trim(), key, type: draft.type, unit: draft.unit || undefined,
-      group: draft.group || "Geral",
-      options: draft.type === "select" ? draft.options.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
-    });
-    setDraft({ label: "", key: "", type: "text", unit: "", group: "Geral", options: "" });
-  };
-
-  const sortedFields = [...fields].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
-  const groups = Array.from(new Set(sortedFields.map((f) => f.group || "Geral")));
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-  const onDragEnd = (e: DragEndEvent) => {
-    if (!e.over || e.active.id === e.over.id) return;
-    const ids = sortedFields.map((f) => f.id);
-    const oldIdx = ids.indexOf(String(e.active.id));
-    const newIdx = ids.indexOf(String(e.over.id));
-    reorderFields(arrayMove(ids, oldIdx, newIdx));
-  };
-
-  return (
-    <div className="px-8 py-8 max-w-5xl">
-      <PageHeader title="Colunas comparativas"
-        subtitle="Defina quais especificações aparecem na ficha técnica e na comparação. Você pode criar quantas quiser." />
-
-      <div className="glass rounded-xl p-5 mb-6">
-        <div className="text-sm font-semibold mb-3">Adicionar nova coluna</div>
-        <div className="grid md:grid-cols-6 gap-2">
-          <input placeholder="Nome (ex: Peso)" value={draft.label} onChange={(e) => setDraft({ ...draft, label: e.target.value })} className={`md:col-span-2 ${ic}`} />
-          <select value={draft.type} onChange={(e) => setDraft({ ...draft, type: e.target.value as FieldType })} className={ic}>
-            <option value="text">Texto</option><option value="number">Número</option><option value="boolean">Sim/Não</option><option value="select">Lista</option>
-          </select>
-          <input placeholder="Unidade" value={draft.unit} onChange={(e) => setDraft({ ...draft, unit: e.target.value })} className={ic} />
-          <input placeholder="Grupo" value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} className={ic} />
-          <button onClick={submit} className="px-3 py-2 rounded-lg bg-primary text-background text-sm font-semibold inline-flex items-center justify-center gap-1.5"><Plus className="h-4 w-4" />Add</button>
-        </div>
-        {draft.type === "select" && (
-          <input placeholder="Opções separadas por vírgula" value={draft.options} onChange={(e) => setDraft({ ...draft, options: e.target.value })} className={`mt-2 ${ic}`} />
-        )}
-      </div>
-
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={sortedFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-5">
-            {groups.map((g) => (
-              <div key={g}>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">{g}</div>
-                <div className="glass rounded-xl divide-y divide-border">
-                  {sortedFields.filter((f) => (f.group || "Geral") === g).map((f) => (
-                    <SortableItem key={f.id} id={f.id}>
-                      <FieldRow f={f} onUpdate={(p) => updateField(f.id, p)} onDelete={() => confirm(`Remover coluna "${f.label}"?`) && removeField(f.id)} />
-                    </SortableItem>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    </div>
-  );
+  const { fields, addField, updateField, removeField } = useStore();
+  const [draft, setDraft] = useState({ label: "", key: "", type: "boolean" as FieldType, unit: "", group: "Hardware", options: "" });
+  const grouped = useMemo(() => [...fields].sort((a,b)=>(a.order??999)-(b.order??999)).reduce<Record<string, SpecField[]>>((acc, f) => { const g = f.group || "Geral"; (acc[g] ||= []).push(f); return acc; }, {}), [fields]);
+  const submit = () => { if (!draft.label.trim()) return; const key = draft.key.trim() || draft.label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, ""); addField({ label: draft.label.trim(), key, type: draft.type, unit: draft.unit || undefined, group: draft.group || "Geral", options: draft.type === "select" ? draft.options.split(",").map((s)=>s.trim()).filter(Boolean) : undefined, order: fields.length }); setDraft({ label: "", key: "", type: "boolean", unit: "", group: draft.group, options: "" }); };
+  return <div className="px-8 py-8 max-w-7xl"><div className="mb-8"><div className="text-[10px] uppercase tracking-widest text-primary font-bold mb-1">Comparação</div><h1 className="font-display text-3xl font-bold">Colunas comparativas</h1><p className="text-sm text-muted-foreground mt-1">Cada card é uma especificação. Edite nome, grupo e tipo sem abrir tabelas confusas.</p></div>
+    <section className="glass rounded-2xl p-5 mb-8"><div className="font-display font-bold mb-4 flex items-center gap-2"><Plus className="h-4 w-4" />Nova coluna</div><div className="grid lg:grid-cols-[1.4fr_1fr_160px_150px_130px] gap-3"><input value={draft.label} onChange={(e)=>setDraft({...draft,label:e.target.value})} placeholder="Nome da coluna" className={ic}/><input value={draft.key} onChange={(e)=>setDraft({...draft,key:e.target.value})} placeholder="Chave opcional" className={ic}/><select value={draft.type} onChange={(e)=>setDraft({...draft,type:e.target.value as FieldType})} className={ic}><option value="boolean">Sim/Não</option><option value="text">Texto</option><option value="number">Número</option><option value="select">Lista</option></select><input value={draft.unit} onChange={(e)=>setDraft({...draft,unit:e.target.value})} placeholder="Unidade" className={ic}/><button onClick={submit} className="rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Adicionar</button></div><div className="flex flex-wrap gap-2 mt-3">{groupsPreset.map((g)=><button key={g} onClick={()=>setDraft({...draft,group:g})} className={`rounded-full border px-3 py-1 text-xs font-semibold ${draft.group===g ? "bg-primary/15 border-primary text-primary" : "border-border text-muted-foreground"}`}>{g}</button>)}</div>{draft.type === "select" && <input value={draft.options} onChange={(e)=>setDraft({...draft,options:e.target.value})} placeholder="Opções separadas por vírgula" className={`${ic} mt-3`}/>}</section>
+    <div className="space-y-8">{Object.entries(grouped).map(([group, items]) => <section key={group}><div className="flex items-center gap-3 mb-3"><h2 className="font-display text-xl font-bold">{group}</h2><span className="text-xs text-muted-foreground">{items.length} colunas</span></div><div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">{items.map((f)=><FieldCard key={f.id} f={f} onUpdate={(p)=>updateField(f.id,p)} onDelete={()=>confirm(`Remover ${f.label}?`) && removeField(f.id)} />)}</div></section>)}</div></div>;
 }
-
-const ic = "w-full bg-input/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
-
-function FieldRow({ f, onUpdate, onDelete }: { f: SpecField; onUpdate: (p: Partial<SpecField>) => void; onDelete: () => void }) {
-  return (
-    <div className="flex items-center gap-3 px-2 py-3">
-      <input value={f.label} onChange={(e) => onUpdate({ label: e.target.value })} className={`${ic} flex-1`} />
-      <input value={f.unit ?? ""} onChange={(e) => onUpdate({ unit: e.target.value })} placeholder="unidade" className={`${ic} w-28`} />
-      <input value={f.group ?? "Geral"} onChange={(e) => onUpdate({ group: e.target.value })} placeholder="grupo" className={`${ic} w-28`} />
-      <span className="text-[10px] text-muted-foreground uppercase tracking-wider w-16 text-center">{f.type}</span>
-      <button onClick={() => onUpdate({ highlight: !f.highlight })} title="Destaque" className={`p-1.5 rounded-md ${f.highlight ? "text-tier-premium" : "text-muted-foreground hover:text-foreground"}`}>
-        <Star className="h-4 w-4" fill={f.highlight ? "currentColor" : "none"} />
-      </button>
-      <button onClick={onDelete} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/15"><Trash2 className="h-4 w-4" /></button>
-    </div>
-  );
-}
+function FieldCard({ f, onUpdate, onDelete }: { f: SpecField; onUpdate: (p: Partial<SpecField>) => void; onDelete: () => void }) { return <div className="rounded-2xl border border-border bg-card p-4 shadow-soft"><div className="flex items-start gap-3"><GripVertical className="h-4 w-4 text-muted-foreground mt-2"/><div className="flex-1 space-y-2"><input value={f.label} onChange={(e)=>onUpdate({label:e.target.value})} className={`${ic} font-semibold`}/><div className="grid grid-cols-2 gap-2"><select value={f.type} onChange={(e)=>onUpdate({type:e.target.value as FieldType})} className={ic}><option value="boolean">Sim/Não</option><option value="text">Texto</option><option value="number">Número</option><option value="select">Lista</option></select><input value={f.unit ?? ""} onChange={(e)=>onUpdate({unit:e.target.value})} placeholder="Unidade" className={ic}/></div><input value={f.group ?? ""} onChange={(e)=>onUpdate({group:e.target.value})} placeholder="Grupo" className={ic}/></div><div className="flex flex-col gap-1"><button onClick={()=>onUpdate({highlight:!f.highlight})} className={`h-8 w-8 rounded-lg grid place-items-center ${f.highlight ? "bg-primary/15 text-primary" : "hover:bg-accent text-muted-foreground"}`}><Star className="h-4 w-4" fill={f.highlight ? "currentColor" : "none"}/></button><button onClick={onDelete} className="h-8 w-8 rounded-lg grid place-items-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4"/></button></div></div><div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><Check className="h-3.5 w-3.5 text-success"/>Chave: {f.key}</div></div>; }
+const ic="w-full bg-input/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
