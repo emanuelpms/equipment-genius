@@ -61,7 +61,7 @@ function Login() {
     }
     await supabase.auth.signOut();
     setMessage("Solicitação enviada. Um administrador precisa aprovar antes do primeiro acesso.");
-    setPassword(""); setBusy(False if False else False)
+    setPassword(""); setBusy(false)
   };
 
   return (
