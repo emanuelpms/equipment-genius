@@ -20,6 +20,7 @@ import { Route as AdminEquipmentsRouteImport } from './routes/admin.equipments'
 import { Route as AdminDifferentialsRouteImport } from './routes/admin.differentials'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminBrandsRouteImport } from './routes/admin.brands'
+import { Route as AdminEquipmentsEquipmentIdRouteImport } from './routes/admin.equipments.$equipmentId'
 
 const ShowcaseRoute = ShowcaseRouteImport.update({
   id: '/showcase',
@@ -76,6 +77,12 @@ const AdminBrandsRoute = AdminBrandsRouteImport.update({
   path: '/brands',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEquipmentsEquipmentIdRoute =
+  AdminEquipmentsEquipmentIdRouteImport.update({
+    id: '/$equipmentId',
+    path: '/$equipmentId',
+    getParentRoute: () => AdminEquipmentsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -84,22 +91,24 @@ export interface FileRoutesByFullPath {
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/differentials': typeof AdminDifferentialsRoute
-  '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/equipments': typeof AdminEquipmentsRouteWithChildren
   '/admin/fields': typeof AdminFieldsRoute
   '/showcase/compare': typeof ShowcaseCompareRoute
   '/admin/': typeof AdminIndexRoute
   '/showcase/': typeof ShowcaseIndexRoute
+  '/admin/equipments/$equipmentId': typeof AdminEquipmentsEquipmentIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/differentials': typeof AdminDifferentialsRoute
-  '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/equipments': typeof AdminEquipmentsRouteWithChildren
   '/admin/fields': typeof AdminFieldsRoute
   '/showcase/compare': typeof ShowcaseCompareRoute
   '/admin': typeof AdminIndexRoute
   '/showcase': typeof ShowcaseIndexRoute
+  '/admin/equipments/$equipmentId': typeof AdminEquipmentsEquipmentIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -109,11 +118,12 @@ export interface FileRoutesById {
   '/admin/brands': typeof AdminBrandsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/differentials': typeof AdminDifferentialsRoute
-  '/admin/equipments': typeof AdminEquipmentsRoute
+  '/admin/equipments': typeof AdminEquipmentsRouteWithChildren
   '/admin/fields': typeof AdminFieldsRoute
   '/showcase/compare': typeof ShowcaseCompareRoute
   '/admin/': typeof AdminIndexRoute
   '/showcase/': typeof ShowcaseIndexRoute
+  '/admin/equipments/$equipmentId': typeof AdminEquipmentsEquipmentIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -129,6 +139,7 @@ export interface FileRouteTypes {
     | '/showcase/compare'
     | '/admin/'
     | '/showcase/'
+    | '/admin/equipments/$equipmentId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/showcase/compare'
     | '/admin'
     | '/showcase'
+    | '/admin/equipments/$equipmentId'
   id:
     | '__root__'
     | '/'
@@ -153,6 +165,7 @@ export interface FileRouteTypes {
     | '/showcase/compare'
     | '/admin/'
     | '/showcase/'
+    | '/admin/equipments/$equipmentId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -240,14 +253,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBrandsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/equipments/$equipmentId': {
+      id: '/admin/equipments/$equipmentId'
+      path: '/$equipmentId'
+      fullPath: '/admin/equipments/$equipmentId'
+      preLoaderRoute: typeof AdminEquipmentsEquipmentIdRouteImport
+      parentRoute: typeof AdminEquipmentsRoute
+    }
   }
 }
+
+interface AdminEquipmentsRouteChildren {
+  AdminEquipmentsEquipmentIdRoute: typeof AdminEquipmentsEquipmentIdRoute
+}
+
+const AdminEquipmentsRouteChildren: AdminEquipmentsRouteChildren = {
+  AdminEquipmentsEquipmentIdRoute: AdminEquipmentsEquipmentIdRoute,
+}
+
+const AdminEquipmentsRouteWithChildren = AdminEquipmentsRoute._addFileChildren(
+  AdminEquipmentsRouteChildren,
+)
 
 interface AdminRouteChildren {
   AdminBrandsRoute: typeof AdminBrandsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminDifferentialsRoute: typeof AdminDifferentialsRoute
-  AdminEquipmentsRoute: typeof AdminEquipmentsRoute
+  AdminEquipmentsRoute: typeof AdminEquipmentsRouteWithChildren
   AdminFieldsRoute: typeof AdminFieldsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -256,7 +288,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBrandsRoute: AdminBrandsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminDifferentialsRoute: AdminDifferentialsRoute,
-  AdminEquipmentsRoute: AdminEquipmentsRoute,
+  AdminEquipmentsRoute: AdminEquipmentsRouteWithChildren,
   AdminFieldsRoute: AdminFieldsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
