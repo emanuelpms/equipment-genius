@@ -1,9 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useStore, tierMeta, type Tier, type Equipment } from "@/lib/store";
+import { useStore, tierMeta, type Tier, type Equipment, type SpecField } from "@/lib/store";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
-import { Search, Sparkles, ChevronRight, Check, X, ArrowRight, Star, Building2, Swords } from "lucide-react";
+import { Search, Sparkles, ChevronRight, Check, X, Star, Building2, Swords, Save, Edit3, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/showcase/")({ component: Showcase });
 
@@ -225,12 +225,22 @@ function EquipCard({ e, highlight, onOpen, onCompare, ownBrandId, brands }: {
 }
 
 function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => void; onCompare: () => void }) {
-  const { fields, categories, differentials, brands } = useStore();
+  const { fields, categories, differentials, brands, auth, updateEquipment } = useStore();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Equipment>({ ...e, photos: e.photos ?? [], highlights: e.highlights ?? [] });
+  const data = editing ? form : e;
   const groups = Array.from(new Set(sortByOrder(fields).map((f) => f.group || "Geral")));
-  const brand = brands.find((b) => b.id === e.brandId);
-  const tm = tierMeta[e.tier] ?? tierMeta.mid;
+  const brand = brands.find((b) => b.id === data.brandId);
+  const tm = tierMeta[data.tier] ?? tierMeta.mid;
+  const canEdit = auth.role === "admin";
+  const save = () => { updateEquipment(form.id, form); setEditing(false); };
+  const setSpec = (key: string, value: string | number | boolean | undefined) => setForm((f) => {
+    const specs = { ...f.specs };
+    if (value === undefined || value === "") delete specs[key]; else specs[key] = value;
+    return { ...f, specs };
+  });
   const renderVal = (k: string) => {
-    const v = e.specs[k]; if (v === undefined || v === "" || v === null) return <span className="text-muted-foreground">—</span>;
+    const v = data.specs[k]; if (v === undefined || v === "" || v === null) return <span className="text-muted-foreground">—</span>;
     if (typeof v === "boolean") return v ? <Check className="h-4 w-4 text-success" /> : <X className="h-4 w-4 text-muted-foreground" />;
     return <span className="font-medium">{String(v)}</span>;
   };
@@ -239,54 +249,66 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
       <div className="flex-1 bg-background/80 backdrop-blur-sm" onClick={onClose} />
       <div className="w-full max-w-2xl bg-card border-l border-border overflow-y-auto scrollbar-thin animate-in slide-in-from-right duration-200">
         <div className={`h-56 relative ${tm.gradient}`}>
-          {e.imageUrl && <img src={e.imageUrl} alt={e.name} className="h-full w-full object-cover mix-blend-overlay opacity-80" />}
+          {data.imageUrl && <img src={data.imageUrl} alt={data.name} className="h-full w-full object-cover mix-blend-overlay opacity-80" />}
           <button onClick={onClose} className="absolute top-4 right-4 h-9 w-9 rounded-full bg-background/40 backdrop-blur grid place-items-center text-foreground hover:bg-background/60"><X className="h-4 w-4" /></button>
           <div className="absolute bottom-5 left-6 right-6">
             {brand && <div className="text-[10px] uppercase tracking-widest text-background/80 font-bold mb-1">{brand.name}{brand.isOwn ? " ★" : ""}</div>}
-            <TierBadge tier={e.tier} size="md" />
-            <h2 className="font-display text-3xl font-bold text-background mt-3 drop-shadow">{e.name}</h2>
-            {e.tagline && <p className="text-background/90 text-sm mt-1">{e.tagline}</p>}
+            <TierBadge tier={data.tier} size="md" />
+            <h2 className="font-display text-3xl font-bold text-background mt-3 drop-shadow">{data.name}</h2>
+            {data.tagline && <p className="text-background/90 text-sm mt-1">{data.tagline}</p>}
           </div>
         </div>
 
         <div className="p-6 space-y-6">
+          {canEdit && (
+            <div className="flex flex-wrap gap-2">
+              {editing ? <button onClick={save} className="flex-1 py-2.5 rounded-xl bg-success text-primary-foreground font-semibold text-sm inline-flex items-center justify-center gap-2"><Save className="h-4 w-4" />Salvar edição rápida</button> : <button onClick={() => setEditing(true)} className="flex-1 py-2.5 rounded-xl border border-border hover:border-primary font-semibold text-sm inline-flex items-center justify-center gap-2"><Edit3 className="h-4 w-4" />Editar nesta tela</button>}
+              <Link to="/admin/equipments/$equipmentId" params={{ equipmentId: data.id }} className="flex-1 py-2.5 rounded-xl border border-border hover:border-primary font-semibold text-sm inline-flex items-center justify-center gap-2"><ExternalLink className="h-4 w-4" />Edição completa</Link>
+            </div>
+          )}
           <button onClick={onCompare} className="w-full py-3 rounded-xl bg-primary text-background font-semibold text-sm shadow-glow inline-flex items-center justify-center gap-2">
             <Swords className="h-4 w-4" /> Comparar com concorrentes
           </button>
 
-          {e.description && <p className="text-sm text-muted-foreground leading-relaxed">{e.description}</p>}
+          {editing ? (
+            <div className="grid gap-3 rounded-xl border border-border p-4 bg-card/60">
+              <input value={form.name} onChange={(ev) => setForm({ ...form, name: ev.target.value })} className="bg-input/40 border border-border rounded-lg px-3 py-2 text-sm font-semibold" />
+              <input value={form.tagline ?? ""} onChange={(ev) => setForm({ ...form, tagline: ev.target.value })} placeholder="Tagline" className="bg-input/40 border border-border rounded-lg px-3 py-2 text-sm" />
+              <textarea value={form.description ?? ""} onChange={(ev) => setForm({ ...form, description: ev.target.value })} rows={3} placeholder="Descrição" className="bg-input/40 border border-border rounded-lg px-3 py-2 text-sm" />
+            </div>
+          ) : data.description && <p className="text-sm text-muted-foreground leading-relaxed">{data.description}</p>}
 
-          {e.photos && e.photos.length > 0 && (
+          {data.photos && data.photos.length > 0 && (
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Galeria</div>
               <div className="grid grid-cols-3 gap-2">
-                {e.photos.map((p, i) => <div key={i} className="aspect-square rounded-lg overflow-hidden bg-input/40"><img src={p} alt="" className="h-full w-full object-cover" /></div>)}
+                {data.photos.map((p, i) => <div key={i} className="aspect-square rounded-lg overflow-hidden bg-input/40"><img src={p} alt="" className="h-full w-full object-cover" /></div>)}
               </div>
             </div>
           )}
 
-          {e.highlights && e.highlights.length > 0 && (
+          {data.highlights && data.highlights.length > 0 && (
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Destaques</div>
-              <div className="flex flex-wrap gap-2">{e.highlights.map((h, i) => <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-primary/15 text-primary font-medium">{h}</span>)}</div>
+              <div className="flex flex-wrap gap-2">{data.highlights.map((h, i) => <span key={i} className="text-xs px-3 py-1.5 rounded-full bg-primary/15 text-primary font-medium">{h}</span>)}</div>
             </div>
           )}
 
-          {e.differentials.length > 0 && (
+          {data.differentials.length > 0 && (
             <div>
               <div className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Diferenciais</div>
               <div className="grid grid-cols-2 gap-2">
-                {e.differentials.map((id) => { const d = differentials.find((x) => x.id === id); if (!d) return null;
+                {data.differentials.map((id) => { const d = differentials.find((x) => x.id === id); if (!d) return null;
                   return <div key={id} className="flex items-center gap-2 text-sm bg-accent/40 rounded-lg px-3 py-2"><Icon name={d.icon} className="h-4 w-4 text-primary" />{d.label}</div>;
                 })}
               </div>
             </div>
           )}
 
-          {e.bestFor.length > 0 && (
+          {data.bestFor.length > 0 && (
             <div>
               <div className="text-xs uppercase tracking-widest text-tier-premium mb-2 flex items-center gap-1.5"><Sparkles className="h-3 w-3" /> Melhor para</div>
-              <div className="flex flex-wrap gap-2">{e.bestFor.map((cid) => { const c = categories.find((x) => x.id === cid); if (!c) return null;
+              <div className="flex flex-wrap gap-2">{data.bestFor.map((cid) => { const c = categories.find((x) => x.id === cid); if (!c) return null;
                 return <span key={cid} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full tier-premium-bg text-background"><Icon name={c.icon} className="h-3 w-3" />{c.name}</span>;
               })}</div>
             </div>
@@ -296,16 +318,16 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
             <div className="text-xs uppercase tracking-widest text-muted-foreground mb-3">Especificações</div>
             <div className="space-y-4">
               {groups.map((g) => {
-                const gFields = sortByOrder(fields).filter((f) => (f.group || "Geral") === g && (e.specs[f.key] !== undefined && e.specs[f.key] !== ""));
+                const gFields = sortByOrder(fields).filter((f) => (f.group || "Geral") === g && (editing || (data.specs[f.key] !== undefined && data.specs[f.key] !== "")));
                 if (gFields.length === 0) return null;
                 return (
-                  <div key={g}>
+                  <div key={g} className={editing ? `rounded-xl border p-3 ${groupClass(g)}` : ""}>
                     <div className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">{g}</div>
                     <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
                       {gFields.map((f) => (
                         <div key={f.id} className="flex items-center justify-between px-4 py-2.5 text-sm">
                           <span className="text-muted-foreground">{f.label}{f.unit ? ` (${f.unit})` : ""}</span>
-                          <span className="flex items-center">{renderVal(f.key)}</span>
+                          <span className="flex items-center min-w-32 justify-end">{editing ? <InlineSpecInput field={f} value={form.specs[f.key]} onChange={(v) => setSpec(f.key, v)} /> : renderVal(f.key)}</span>
                         </div>
                       ))}
                     </div>
@@ -318,4 +340,24 @@ function DetailModal({ e, onClose, onCompare }: { e: Equipment; onClose: () => v
       </div>
     </div>
   );
+}
+
+function InlineSpecInput({ field, value, onChange }: { field: SpecField; value: string | number | boolean | undefined; onChange: (v: string | number | boolean | undefined) => void }) {
+  const cls = "w-36 bg-input/50 border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40";
+  if (field.type === "boolean") {
+    return <button type="button" onClick={() => onChange(value === true ? false : value === false ? undefined : true)} className={`w-24 rounded-md border px-2 py-1 text-xs font-semibold ${value === true ? "bg-success/15 border-success/40 text-success" : value === false ? "bg-destructive/10 border-destructive/30 text-destructive" : "bg-input/40 border-border text-muted-foreground"}`}>{value === true ? "Sim" : value === false ? "Não" : "—"}</button>;
+  }
+  if (field.type === "select") {
+    return <select value={String(value ?? "")} onChange={(ev) => onChange(ev.target.value || undefined)} className={cls}><option value="">—</option>{field.options?.map((o) => <option key={o} value={o}>{o}</option>)}</select>;
+  }
+  return <input type={field.type === "number" ? "number" : "text"} value={value === undefined ? "" : String(value)} onChange={(ev) => onChange(field.type === "number" ? (ev.target.value === "" ? undefined : +ev.target.value) : (ev.target.value || undefined))} className={cls} />;
+}
+
+function groupClass(group: string) {
+  const g = group.toLowerCase();
+  if (g.includes("radiologia")) return "spec-radiologia-bg";
+  if (g.includes("obgyn")) return "spec-obgyn-bg";
+  if (g.includes("cardio")) return "spec-cardiologia-bg";
+  if (g.includes("uro")) return "spec-urologia-bg";
+  return "bg-card/60";
 }

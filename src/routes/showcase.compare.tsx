@@ -89,7 +89,8 @@ function Compare() {
     if (selected.length === 0 && ownEquips[0]) setSelected([ownEquips[0].id]);
   }, [ownEquips, selected.length]);
 
-  const all = selected.map((id) => equipments.find((e) => e.id === id)).filter(Boolean) as Equipment[];
+  const selectedEquipments = selected.map((id) => equipments.find((e) => e.id === id)).filter(Boolean) as Equipment[];
+  const all = [...selectedEquipments.filter((e) => brands.find((b) => b.id === e.brandId)?.isOwn), ...selectedEquipments.filter((e) => !brands.find((b) => b.id === e.brandId)?.isOwn)];
   const visibleFields = sortByOrder(fields);
   const groups = Array.from(new Set(visibleFields.map((f) => f.group || "Geral")));
   const { scores, advantages } = useMemo(() => computeScores(all, visibleFields), [all, visibleFields]);
@@ -290,11 +291,12 @@ function Compare() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-card/40">
-                      <th className="sticky left-0 bg-card/95 backdrop-blur z-10 text-left p-3 w-56 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Especificação</th>
-                      {all.map((e) => {
+                      <th className="sticky left-0 bg-card/95 backdrop-blur z-20 text-left p-3 w-56 min-w-56 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Especificação</th>
+                      {all.map((e, index) => {
                         const b = brands.find((x) => x.id === e.brandId);
+                        const ownSticky = b?.isOwn && index === 0;
                         return (
-                          <th key={e.id} className={`text-left p-3 min-w-[160px] text-xs font-semibold ${b?.isOwn ? "bg-primary/5" : ""}`}>
+                          <th key={e.id} className={`text-left p-3 min-w-[190px] text-xs font-semibold ${b?.isOwn ? "bg-primary/5" : ""} ${ownSticky ? "sticky left-56 z-20 bg-card/95 backdrop-blur shadow-[8px_0_18px_-18px_oklch(0.2_0.05_260/0.5)]" : ""}`}>
                             <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-normal">{b?.name ?? "—"}</div>
                             {e.shortName || e.name}
                           </th>
@@ -328,7 +330,7 @@ function GroupBlock({ group, open, onToggle, fields, all, brands, colSpan }: {
   return (
     <>
       <tr className="border-t border-border bg-accent/30">
-        <td colSpan={colSpan} className="px-3 py-2 sticky left-0 bg-accent/30 backdrop-blur">
+        <td colSpan={colSpan} className={`px-3 py-2 sticky left-0 z-10 backdrop-blur ${groupClass(group)}`}>
           <button onClick={onToggle} className="inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-bold text-foreground/80 hover:text-foreground">
             {open ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             {group}
@@ -353,15 +355,16 @@ function GroupBlock({ group, open, onToggle, fields, all, brands, colSpan }: {
         }
         return (
           <tr key={f.id} className="border-t border-border/60 hover:bg-accent/10">
-            <td className="p-3 text-xs text-muted-foreground sticky left-0 bg-card/80 backdrop-blur align-top">
+            <td className="p-3 text-xs text-muted-foreground sticky left-0 z-10 bg-card/95 backdrop-blur align-top min-w-56">
               {f.label}{f.unit && <span className="text-muted-foreground/60 ml-1">({f.unit})</span>}
             </td>
             {all.map((e, i) => {
               const b = brands.find((x) => x.id === e.brandId);
               const v = e.specs[f.key];
               const isWin = winnerIdxs.has(i);
+              const ownSticky = b?.isOwn && i === 0;
               return (
-                <td key={e.id} className={`p-3 align-top ${b?.isOwn ? "bg-primary/5" : ""} ${isWin ? "bg-success/10" : ""}`}>
+                <td key={e.id} className={`p-3 align-top min-w-[190px] ${b?.isOwn ? "bg-primary/5" : ""} ${isWin ? "bg-success/10" : ""} ${ownSticky ? "sticky left-56 z-10 bg-card/95 backdrop-blur shadow-[8px_0_18px_-18px_oklch(0.2_0.05_260/0.5)]" : ""}`}>
                   {v === undefined || v === "" ? <span className="text-muted-foreground/40">—</span>
                     : typeof v === "boolean" ? (v ? <Check className={`h-4 w-4 ${isWin ? "text-success" : "text-success/70"}`} /> : <X className="h-4 w-4 text-muted-foreground/50" />)
                     : <span className={`text-sm ${isWin ? "font-bold text-success" : "font-medium"}`}>{String(v)}</span>}
@@ -373,6 +376,15 @@ function GroupBlock({ group, open, onToggle, fields, all, brands, colSpan }: {
       })}
     </>
   );
+}
+
+function groupClass(group: string) {
+  const g = group.toLowerCase();
+  if (g.includes("radiologia")) return "spec-radiologia-bg";
+  if (g.includes("obgyn")) return "spec-obgyn-bg";
+  if (g.includes("cardio")) return "spec-cardiologia-bg";
+  if (g.includes("uro")) return "spec-urologia-bg";
+  return "bg-accent/30";
 }
 
 function Picker({ pool, brands, excludeIds, onPick }: {
@@ -414,9 +426,11 @@ function Picker({ pool, brands, excludeIds, onPick }: {
         </select>
         <select value={tier} onChange={(e) => setTier(e.target.value as Tier | "all")} className="bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs">
           <option value="all">Todos tiers</option>
+          <option value="super-premium">Super Premium</option>
           <option value="premium">Premium</option>
-          <option value="medium">Medium</option>
-          <option value="low">Essential</option>
+          <option value="high">High</option>
+          <option value="mid">Mid</option>
+          <option value="low">Low</option>
         </select>
       </div>
       <div className="max-h-72 overflow-y-auto scrollbar-thin space-y-3">

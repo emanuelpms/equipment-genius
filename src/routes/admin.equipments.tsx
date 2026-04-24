@@ -1,10 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, tierMeta, type Equipment, type Tier, type SpecField } from "@/lib/store";
 import { PageHeader } from "@/components/PageHeader";
 import { TierBadge } from "@/components/TierBadge";
 import { Icon } from "@/components/Icon";
-import { Plus, Trash2, Search, X, Save, Copy, Settings2, Star, Check, Download, Upload } from "lucide-react";
+import { Plus, Trash2, Search, X, Save, Copy, Settings2, Star, Check, Download, Upload, ExternalLink } from "lucide-react";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -222,9 +222,11 @@ function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDup
       <td className="p-3 align-middle">
         <select value={e.tier} onChange={(ev) => onUpdate({ tier: ev.target.value as Tier })}
           className="w-full bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40">
+          <option value="super-premium">Super Premium</option>
           <option value="premium">Premium</option>
-          <option value="medium">Medium</option>
-          <option value="low">Essential</option>
+          <option value="high">High</option>
+          <option value="mid">Mid</option>
+          <option value="low">Low</option>
         </select>
       </td>
       {fields.map((f) => (
@@ -234,7 +236,8 @@ function EquipmentRow({ e, fields, brands, onUpdate, onUpdateSpec, onEdit, onDup
       ))}
       <td className="p-3 align-middle text-right sticky right-0 bg-card/80 backdrop-blur">
         <div className="inline-flex gap-0.5">
-          <button onClick={onEdit} title="Detalhes" className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Settings2 className="h-3.5 w-3.5" /></button>
+          <button onClick={onEdit} title="Edição rápida" className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Settings2 className="h-3.5 w-3.5" /></button>
+          <Link to="/admin/equipments/$equipmentId" params={{ equipmentId: e.id }} title="Página completa" className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><ExternalLink className="h-3.5 w-3.5" /></Link>
           <button onClick={onDuplicate} title="Duplicar" className="p-1.5 rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"><Copy className="h-3.5 w-3.5" /></button>
           <button onClick={onDelete} title="Remover" className="p-1.5 rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
         </div>
@@ -479,9 +482,11 @@ function QuickAddRow({ colSpan, brands, defaultBrandId, onAdd }: {
       <td className="p-3 align-middle">
         <select value={tier} onChange={(e) => setTier(e.target.value as Tier)}
           className="w-full bg-input/40 border border-border rounded-md px-2 py-1.5 text-xs font-semibold">
+          <option value="super-premium">Super Premium</option>
           <option value="premium">Premium</option>
-          <option value="medium">Medium</option>
-          <option value="low">Essential</option>
+          <option value="high">High</option>
+          <option value="mid">Mid</option>
+          <option value="low">Low</option>
         </select>
       </td>
       <td colSpan={Math.max(1, colSpan - 5)} className="p-3 text-xs text-muted-foreground italic">
