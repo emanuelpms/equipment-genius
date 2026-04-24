@@ -1,47 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useStore } from "@/lib/store";
-import { PageHeader } from "@/components/PageHeader";
-import { Icon } from "@/components/Icon";
 import { Plus, Trash2 } from "lucide-react";
-
+import { Icon } from "@/components/Icon";
+import { useStore } from "@/lib/store";
 export const Route = createFileRoute("/admin/categories")({ component: CategoriesAdmin });
-const ic = "w-full bg-input/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
-
-function CategoriesAdmin() {
-  const { categories, addCategory, updateCategory, removeCategory } = useStore();
-  const [d, setD] = useState({ name: "", icon: "Sparkles", description: "" });
-  const submit = () => { if (!d.name.trim()) return; addCategory(d); setD({ name: "", icon: "Sparkles", description: "" }); };
-
-  return (
-    <div className="px-8 py-8 max-w-5xl">
-      <PageHeader title="Categorias de uso"
-        subtitle="Tipos de exames / funcionalidades. Use nomes de ícones do Lucide (Sparkles, HeartPulse, Baby, Bone, Stethoscope, Activity, Brain...)." />
-
-      <div className="glass rounded-xl p-5 mb-6 grid md:grid-cols-12 gap-2">
-        <input placeholder="Nome (ex: Cardiologia)" value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} className={`md:col-span-3 ${ic}`} />
-        <input placeholder="Ícone Lucide" value={d.icon} onChange={(e) => setD({ ...d, icon: e.target.value })} className={`md:col-span-2 ${ic}`} />
-        <input placeholder="Descrição curta" value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} className={`md:col-span-5 ${ic}`} />
-        <button onClick={submit} className="md:col-span-2 px-3 py-2 rounded-lg bg-primary text-background text-sm font-semibold inline-flex items-center justify-center gap-1.5"><Plus className="h-4 w-4" />Adicionar</button>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-        {categories.map((c) => (
-          <div key={c.id} className="glass rounded-xl p-4">
-            <div className="flex items-start gap-3 mb-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/15 grid place-items-center text-primary"><Icon name={c.icon} className="h-5 w-5" /></div>
-              <div className="flex-1 min-w-0">
-                <input value={c.name} onChange={(e) => updateCategory(c.id, { name: e.target.value })} className={`${ic} font-semibold`} />
-              </div>
-              <button onClick={() => confirm(`Remover ${c.name}?`) && removeCategory(c.id)} className="p-1.5 rounded-md text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <input value={c.icon} onChange={(e) => updateCategory(c.id, { icon: e.target.value })} className={ic} placeholder="ícone" />
-              <input value={c.description ?? ""} onChange={(e) => updateCategory(c.id, { description: e.target.value })} className={`${ic} col-span-2`} placeholder="descrição" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+const presets = [{name:"Radiologia",icon:"ScanLine"},{name:"ObGyn",icon:"Baby"},{name:"Cardiologia",icon:"HeartPulse"},{name:"Urologia",icon:"Droplets"},{name:"Vascular",icon:"Activity"},{name:"POCUS",icon:"Stethoscope"}];
+function CategoriesAdmin(){const{categories,addCategory,updateCategory,removeCategory}=useStore();const[d,setD]=useState({name:"",icon:"Sparkles",description:""});const submit=()=>{if(!d.name.trim())return;addCategory({...d,order:categories.length});setD({name:"",icon:"Sparkles",description:""})};return <div className="px-8 py-8 max-w-7xl"><div className="mb-8"><div className="text-[10px] uppercase tracking-widest text-primary font-bold mb-1">Especialidades</div><h1 className="font-display text-3xl font-bold">Categorias de uso</h1><p className="text-sm text-muted-foreground mt-1">Organize os tipos de exames usados na vitrine e nas recomendações.</p></div><section className="glass rounded-2xl p-5 mb-8"><div className="font-display font-bold mb-4 flex items-center gap-2"><Plus className="h-4 w-4"/>Nova categoria</div><div className="grid lg:grid-cols-[1fr_180px_2fr_140px] gap-3"><input value={d.name} onChange={(e)=>setD({...d,name:e.target.value})} placeholder="Nome" className={ic}/><input value={d.icon} onChange={(e)=>setD({...d,icon:e.target.value})} placeholder="Ícone" className={ic}/><input value={d.description} onChange={(e)=>setD({...d,description:e.target.value})} placeholder="Descrição" className={ic}/><button onClick={submit} className="rounded-lg bg-primary text-primary-foreground text-sm font-semibold">Adicionar</button></div><div className="flex flex-wrap gap-2 mt-3">{presets.map((p)=><button key={p.name} onClick={()=>setD({...d,...p})} className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground"><Icon name={p.icon} className="inline h-3 w-3 mr-1"/>{p.name}</button>)}</div></section><div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">{categories.map((c)=><div key={c.id} className="rounded-2xl border border-border bg-card p-5 shadow-soft"><div className="flex gap-3"><div className="h-12 w-12 rounded-xl bg-primary/10 text-primary grid place-items-center"><Icon name={c.icon} className="h-5 w-5"/></div><div className="flex-1 space-y-2"><input value={c.name} onChange={(e)=>updateCategory(c.id,{name:e.target.value})} className={`${ic} font-semibold`}/><input value={c.icon} onChange={(e)=>updateCategory(c.id,{icon:e.target.value})} className={ic}/><textarea value={c.description??""} onChange={(e)=>updateCategory(c.id,{description:e.target.value})} rows={3} className={ic}/></div><button onClick={()=>confirm(`Remover ${c.name}?`)&&removeCategory(c.id)} className="h-8 w-8 rounded-lg grid place-items-center text-muted-foreground hover:text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4"/></button></div></div>)}</div></div>}
+const ic="w-full bg-input/40 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40";
