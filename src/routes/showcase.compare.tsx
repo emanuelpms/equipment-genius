@@ -89,7 +89,8 @@ function Compare() {
     if (selected.length === 0 && ownEquips[0]) setSelected([ownEquips[0].id]);
   }, [ownEquips, selected.length]);
 
-  const all = selected.map((id) => equipments.find((e) => e.id === id)).filter(Boolean) as Equipment[];
+  const selectedEquipments = selected.map((id) => equipments.find((e) => e.id === id)).filter(Boolean) as Equipment[];
+  const all = [...selectedEquipments.filter((e) => brands.find((b) => b.id === e.brandId)?.isOwn), ...selectedEquipments.filter((e) => !brands.find((b) => b.id === e.brandId)?.isOwn)];
   const visibleFields = sortByOrder(fields);
   const groups = Array.from(new Set(visibleFields.map((f) => f.group || "Geral")));
   const { scores, advantages } = useMemo(() => computeScores(all, visibleFields), [all, visibleFields]);
@@ -290,11 +291,12 @@ function Compare() {
                 <table className="w-full text-sm border-collapse">
                   <thead>
                     <tr className="border-b border-border bg-card/40">
-                      <th className="sticky left-0 bg-card/95 backdrop-blur z-10 text-left p-3 w-56 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Especificação</th>
-                      {all.map((e) => {
+                      <th className="sticky left-0 bg-card/95 backdrop-blur z-20 text-left p-3 w-56 min-w-56 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Especificação</th>
+                      {all.map((e, index) => {
                         const b = brands.find((x) => x.id === e.brandId);
+                        const ownSticky = b?.isOwn && index === 0;
                         return (
-                          <th key={e.id} className={`text-left p-3 min-w-[160px] text-xs font-semibold ${b?.isOwn ? "bg-primary/5" : ""}`}>
+                          <th key={e.id} className={`text-left p-3 min-w-[190px] text-xs font-semibold ${b?.isOwn ? "bg-primary/5" : ""} ${ownSticky ? "sticky left-56 z-20 bg-card/95 backdrop-blur shadow-[8px_0_18px_-18px_oklch(0.2_0.05_260/0.5)]" : ""}`}>
                             <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-normal">{b?.name ?? "—"}</div>
                             {e.shortName || e.name}
                           </th>
