@@ -53,3 +53,14 @@ export const changeUserRole = createServerFn({ method: "POST" })
     await supabaseAdmin.from("user_roles").insert({ user_id: data.userId, role: data.role });
     return { ok: true };
   });
+
+
+export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
+  .inputValidator((data: { userId: string }) => data)
+  .handler(async ({ data }) => {
+    const { count } = await supabaseAdmin.from("user_roles").select("id", { count: "exact", head: true });
+    if ((count ?? 0) > 0) return { created: false };
+    await supabaseAdmin.from("user_roles").insert({ user_id: data.userId, role: "admin" });
+    await supabaseAdmin.from("access_requests").update({ status: "approved", requested_role: "admin" }).eq("user_id", data.userId);
+    return { created: true };
+  });

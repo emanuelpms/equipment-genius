@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, CheckCircle2, KeyRound, Package, Shield, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentRole, normalizeLoginId } from "@/lib/auth";
+import { bootstrapFirstAdmin } from "@/lib/admin-auth.functions";
 import { useStore, type Role } from "@/lib/store";
 
 export const Route = createFileRoute("/")({ component: Login });
@@ -58,6 +59,13 @@ function Login() {
     const userId = data.user?.id;
     if (userId) {
       await supabase.from("access_requests").insert({ user_id: userId, login_identifier: loginId.trim(), requested_role: requestedRole });
+      if (requestedRole === "admin") {
+        const first = await bootstrapFirstAdmin({ data: { userId } });
+        if (first.created) {
+          setMessage("Primeiro administrador criado. Agora você já pode entrar com este ID e senha.");
+          setPassword(""); setBusy(false); return;
+        }
+      }
     }
     await supabase.auth.signOut();
     setMessage("Solicitação enviada. Um administrador precisa aprovar antes do primeiro acesso.");
