@@ -7,19 +7,19 @@ import { useStore } from "@/lib/store";
 export const Route = createFileRoute("/admin")({ component: AdminLayout });
 
 function AdminLayout() {
-  const { auth, login, logout } = useStore();
-  const [ready, setReady] = useState(false);
+  const { login, logout } = useStore();
+  const [serverRole, setServerRole] = useState<"loading" | "admin" | "seller" | null>("loading");
 
   useEffect(() => {
     getCurrentRole().then(({ role, login: name }) => {
       if (role) login(role, name ?? "Usuário");
       else logout();
-      setReady(true);
+      setServerRole(role ?? null);
     });
   }, [login, logout]);
 
-  if (!ready) return <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">Verificando acesso…</div>;
-  if (!auth.role) return <Navigate to="/" />;
-  if (auth.role !== "admin") return <Navigate to="/showcase" />;
+  if (serverRole === "loading") return <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">Verificando acesso…</div>;
+  if (!serverRole) return <Navigate to="/" />;
+  if (serverRole !== "admin") return <Navigate to="/showcase" />;
   return <AppShell scope="admin" />;
 }
