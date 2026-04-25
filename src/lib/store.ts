@@ -526,6 +526,22 @@ const initialDiffs = seedDiffs;
 const initialBrands = seedBrands;
 const initialEquips = seedEquipments(initialFields, initialCats, initialDiffs, initialBrands);
 
+const toTextSpecs = (specs: Record<string, string | number | boolean>): Record<string, string | number | boolean> => {
+  const out: Record<string, string> = {};
+  Object.entries(specs ?? {}).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === "") return;
+    if (typeof v === "boolean") out[k] = v ? "Sim" : "Não";
+    else out[k] = String(v);
+  });
+  return out;
+};
+
+const forceTextFields = (fields: SpecField[]): SpecField[] =>
+  fields.map((f) => ({ ...f, type: "text" as FieldType, options: undefined }));
+
+const forceTextEquipments = (equips: Equipment[]): Equipment[] =>
+  equips.map((e) => ({ ...e, specs: toTextSpecs(e.specs) }));
+
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
@@ -533,14 +549,14 @@ export const useStore = create<AppState>()(
       login: (role, name) => set({ auth: { role, name } }),
       logout: () => set({ auth: { role: null, name: null } }),
 
-      fields: initialFields,
+      fields: forceTextFields(initialFields),
       categories: initialCats,
       differentials: initialDiffs,
-      equipments: initialEquips,
+      equipments: forceTextEquipments(initialEquips),
       brands: initialBrands,
       savedComparisons: [],
 
-      addField: (f) => set((s) => ({ fields: [...s.fields, { ...f, id: uid() }] })),
+      addField: (f) => set((s) => ({ fields: [...s.fields, { ...f, id: uid(), type: "text", options: undefined }] })),
       updateField: (id, patch) => set((s) => ({ fields: s.fields.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
       removeField: (id) => set((s) => {
         const key = s.fields.find((f) => f.id === id)?.key;
@@ -647,15 +663,27 @@ export const useStore = create<AppState>()(
       removeSavedComparison: (id) => set((s) => ({ savedComparisons: s.savedComparisons.filter((x) => x.id !== id) })),
 
       resetSeed: () => set({
-        fields: initialFields,
+        fields: forceTextFields(initialFields),
         categories: initialCats,
         differentials: initialDiffs,
-        equipments: initialEquips,
+        equipments: forceTextEquipments(initialEquips),
         brands: initialBrands,
         savedComparisons: [],
       }),
     }),
-    { name: "samsung-medison-catalog-v4" }
+    {
+      name: "samsung-medison-catalog-v5-text",
+      migrate: (state: unknown) => {
+        const s = state as Partial<AppState> | undefined;
+        if (!s) return s as unknown as AppState;
+        return {
+          ...s,
+          fields: s.fields ? forceTextFields(s.fields) : undefined,
+          equipments: s.equipments ? forceTextEquipments(s.equipments) : undefined,
+        } as AppState;
+      },
+      version: 5,
+    }
   )
 );
 
