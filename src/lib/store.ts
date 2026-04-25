@@ -663,15 +663,27 @@ export const useStore = create<AppState>()(
       removeSavedComparison: (id) => set((s) => ({ savedComparisons: s.savedComparisons.filter((x) => x.id !== id) })),
 
       resetSeed: () => set({
-        fields: initialFields,
+        fields: forceTextFields(initialFields),
         categories: initialCats,
         differentials: initialDiffs,
-        equipments: initialEquips,
+        equipments: forceTextEquipments(initialEquips),
         brands: initialBrands,
         savedComparisons: [],
       }),
     }),
-    { name: "samsung-medison-catalog-v4" }
+    {
+      name: "samsung-medison-catalog-v5-text",
+      migrate: (state: unknown) => {
+        const s = state as Partial<AppState> | undefined;
+        if (!s) return s as AppState;
+        return {
+          ...s,
+          fields: s.fields ? forceTextFields(s.fields) : undefined,
+          equipments: s.equipments ? forceTextEquipments(s.equipments) : undefined,
+        } as AppState;
+      },
+      version: 5,
+    }
   )
 );
 
