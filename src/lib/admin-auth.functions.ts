@@ -56,11 +56,15 @@ export const changeUserRole = createServerFn({ method: "POST" })
 
 
 export const bootstrapFirstAdmin = createServerFn({ method: "POST" })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator((data: { token: string }) => data)
   .handler(async ({ data }) => {
+    // Verify the caller's JWT and derive userId from claims — never trust client-supplied IDs.
+    const { data: userData, error: authError } = await supabaseAdmin.auth.getUser(data.token);
+    if (authError || !userData.user) throw new Error("Autenticação obrigatória.");
+    const userId = userData.user.id;
     const { count } = await supabaseAdmin.from("user_roles").select("id", { count: "exact", head: true });
     if ((count ?? 0) > 0) return { created: false };
-    await supabaseAdmin.from("user_roles").insert({ user_id: data.userId, role: "admin" });
-    await supabaseAdmin.from("access_requests").update({ status: "approved", requested_role: "admin" }).eq("user_id", data.userId);
+    await supabaseAdmin.from("user_roles").insert({ user_id: userId, role: "admin" });
+    await supabaseAdmin.from("access_requests").update({ status: "approved", requested_role: "admin" }).eq("user_id", userId);
     return { created: true };
   });
