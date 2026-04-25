@@ -675,7 +675,7 @@ export const useStore = create<AppState>()(
       name: "samsung-medison-catalog-v5-text",
       migrate: (state: unknown) => {
         const s = state as Partial<AppState> | undefined;
-        if (!s) return s as AppState;
+        if (!s) return s as unknown as AppState;
         return {
           ...s,
           fields: s.fields ? forceTextFields(s.fields) : undefined,
