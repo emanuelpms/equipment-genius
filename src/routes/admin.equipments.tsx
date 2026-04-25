@@ -1,10 +1,10 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Check, Copy, ExternalLink, Image, Plus, Save, Search, Trash2, X } from "lucide-react";
+import { Copy, ExternalLink, Image, Plus, Save, Search, Trash2, X } from "lucide-react";
 import { Icon } from "@/components/Icon";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { TierBadge } from "@/components/TierBadge";
-import { useStore, tierMeta, type Equipment, type FieldType, type SpecField, type Tier } from "@/lib/store";
+import { useStore, tierMeta, type Equipment, type SpecField, type Tier } from "@/lib/store";
 
 export const Route = createFileRoute("/admin/equipments")({ component: EquipmentsAdmin });
 
