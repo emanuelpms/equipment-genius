@@ -60,10 +60,15 @@ function Login() {
     if (userId) {
       await supabase.from("access_requests").insert({ user_id: userId, login_identifier: loginId.trim(), requested_role: requestedRole });
       if (requestedRole === "admin") {
-        const first = await bootstrapFirstAdmin({ data: { userId } });
-        if (first.created) {
-          setMessage("Primeiro administrador criado. Agora você já pode entrar com este ID e senha.");
-          setPassword(""); setBusy(false); return;
+        const sessionToken = data.session?.access_token
+          ?? (await supabase.auth.signInWithPassword({ email, password })).data.session?.access_token;
+        if (sessionToken) {
+          const first = await bootstrapFirstAdmin({ data: { token: sessionToken } });
+          if (first.created) {
+            setMessage("Primeiro administrador criado. Agora você já pode entrar com este ID e senha.");
+            await supabase.auth.signOut();
+            setPassword(""); setBusy(false); return;
+          }
         }
       }
     }
