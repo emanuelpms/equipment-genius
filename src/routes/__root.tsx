@@ -36,6 +36,10 @@ export const Route = createRootRoute({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Catálogo Pro · Equipamentos" },
+      { name: "twitter:description", content: "Catálogo profissional de equipamentos com comparação dinâmica." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d14d18a3-9f40-4b6c-a96d-ee4d80e3d93f/id-preview-b446e188--5443ecf2-6bc1-441d-b9df-e828b3a4ea96.lovable.app-1777165316112.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d14d18a3-9f40-4b6c-a96d-ee4d80e3d93f/id-preview-b446e188--5443ecf2-6bc1-441d-b9df-e828b3a4ea96.lovable.app-1777165316112.png" },
     ],
     links: [
       {
