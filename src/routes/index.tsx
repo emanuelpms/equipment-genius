@@ -24,18 +24,19 @@ function Login() {
     let mounted = true;
     getCurrentRole().then(({ role, login: name }) => {
       if (!mounted) return;
-      if (role) login(role, name ?? "Usuário");
-      else logout();
+      if (role) useStore.getState().login(role, name ?? "Usuário");
+      else useStore.getState().logout();
       setLoading(false);
     });
     const { data } = supabase.auth.onAuthStateChange(() => {
       getCurrentRole().then(({ role, login: name }) => {
-        if (role) login(role, name ?? "Usuário");
-        else logout();
+        if (role) useStore.getState().login(role, name ?? "Usuário");
+        else useStore.getState().logout();
       });
     });
     return () => { mounted = false; data.subscription.unsubscribe(); };
-  }, [login, logout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (!loading && auth.role) return <Navigate to={auth.role === "admin" ? "/admin" : "/showcase"} />;
 
